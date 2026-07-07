@@ -52,3 +52,7 @@ Thumbs.db
 ### Environment ###
 .env
 *.env.local
+
+### Test artifacts ###
+test_*
+*.ps1

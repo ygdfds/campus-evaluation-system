@@ -1,11 +1,12 @@
 package com.campus.evaluation.common.security;
 
-import cn.dev33.satoken.interceptor.SaInterceptor;
-import cn.dev33.satoken.router.SaRouter;
-import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import cn.dev33.satoken.interceptor.SaInterceptor;
+import cn.dev33.satoken.router.SaRouter;
+import cn.dev33.satoken.stp.StpUtil;
 
 /**
  * Sa-Token 路由拦截配置
@@ -25,7 +26,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             "/swagger-resources/**",
             "/favicon.ico",
             "/auth/login",
-            "/auth/captcha"
+            "/auth/captcha",
+            "/files/*/preview"
     };
 
     @Override
