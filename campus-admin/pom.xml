@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.campus.evaluation</groupId>
+        <artifactId>campus-evaluation-backend</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>campus-admin</artifactId>
+    <description>启动模块（唯一可启动的 Spring Boot 应用）</description>
+
+    <dependencies>
+        <!-- Framework 基础模块 -->
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-tenant</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-file</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-swagger</artifactId>
+        </dependency>
+
+        <!-- 业务模块 -->
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-platform</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-school</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-evaluation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-review</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-complaint</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-message</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-import</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-stats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-file</artifactId>
+        </dependency>
+
+        <!-- Spring Boot JDBC（用于 HealthController 的 JdbcTemplate） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring Boot Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

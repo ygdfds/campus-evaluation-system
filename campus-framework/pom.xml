@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.campus.evaluation</groupId>
+        <artifactId>campus-evaluation-backend</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>campus-framework</artifactId>
+    <packaging>pom</packaging>
+    <description>基础框架模块聚合</description>
+
+    <modules>
+        <module>campus-common-core</module>
+        <module>campus-common-web</module>
+        <module>campus-common-mybatis</module>
+        <module>campus-common-security</module>
+        <module>campus-common-tenant</module>
+        <module>campus-common-redis</module>
+        <module>campus-common-log</module>
+        <module>campus-common-file</module>
+        <module>campus-common-swagger</module>
+        <module>campus-storage</module>
+    </modules>
+</project>

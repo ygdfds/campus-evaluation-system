@@ -1,0 +1,32 @@
+# ==========================================
+# 开发环境配置
+# ==========================================
+
+spring:
+  # MySQL 数据源
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # TODO: 请修改为实际的数据库地址、用户名和密码
+    url: jdbc:mysql://localhost:3306/campus_evaluation_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: 无密码
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# 开发环境日志级别
+logging:
+  level:
+    com.campus.evaluation: DEBUG
+    org.springframework.web: INFO

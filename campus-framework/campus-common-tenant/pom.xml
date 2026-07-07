@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.campus.evaluation</groupId>
+        <artifactId>campus-framework</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>campus-common-tenant</artifactId>
+    <description>多租户支持模块</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>
