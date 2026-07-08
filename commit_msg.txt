@@ -1,0 +1,16 @@
+feat(evaluation): Phase 5 - 评价表单管理与审核发布
+
+新增评价表单管理全流程功能，包括：
+- 表单 CRUD（新建/编辑/删除/复制/列表/详情）
+- 题目配置（评分题/单选/多选/文本，全量替换保存）
+- 评价窗口管理（开始/结束时间、状态自动计算）
+- 审核发布流程（提交审核 → school_admin 审核通过/驳回）
+- 风险检查（blocker/warning 两级，提交前自动校验）
+- 权限隔离（审核接口仅 school_admin 可访问）
+- 操作日志记录
+
+技术变更：
+- DB: eval_form 新增 score_enabled、published_at 字段
+- 新增 CrossModuleHelperMapper 跨模块只读查询
+- campus-evaluation 模块新增 security/log/swagger 依赖
+- SaTokenConfigure 添加 /evaluation/audits/** 角色校验

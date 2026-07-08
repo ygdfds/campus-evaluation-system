@@ -52,6 +52,13 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                         StpUtil.checkLogin();
                         StpUtil.checkRole("school_admin");
                     });
+
+            // 审核接口仅 school_admin 可访问
+            SaRouter.match("/evaluation/audits/**")
+                    .check(r -> {
+                        StpUtil.checkLogin();
+                        StpUtil.checkRole("school_admin");
+                    });
         })).addPathPatterns("/**");
     }
 }
