@@ -29,4 +29,6 @@ public class CurrentUserVO {
     private List<String> roles;
 
     private List<String> permissions;
+
+    private Boolean mustChangePassword;
 }

@@ -32,6 +32,10 @@
         </dependency>
         <dependency>
             <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-common-log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
             <artifactId>campus-common-swagger</artifactId>
         </dependency>
         <dependency>

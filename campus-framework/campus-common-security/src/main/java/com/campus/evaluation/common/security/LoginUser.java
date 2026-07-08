@@ -46,4 +46,7 @@ public class LoginUser implements Serializable {
 
     /** Token 有效期（秒） */
     private Long expiresIn;
+
+    /** 是否必须修改密码 */
+    private Boolean mustChangePassword;
 }

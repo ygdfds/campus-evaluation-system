@@ -41,6 +41,12 @@ public class AuthPersonProfile {
 
     private Long orgUnitId;
 
+    private Long teachingOrgId;
+
+    private Long serviceOrgId;
+
+    private Long classId;
+
     private String departmentName;
 
     private String className;

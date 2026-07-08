@@ -126,6 +126,7 @@ public class AuthServiceImpl implements AuthService {
         loginUser.setRoles(roleCodes);
         loginUser.setPermissions(permissionCodes);
         loginUser.setExpiresIn(expiresIn);
+        loginUser.setMustChangePassword(account.getMustChangePassword());
 
         // 8. Sa-Token 登录
         SaLoginModel loginModel = new SaLoginModel()
@@ -190,6 +191,7 @@ public class AuthServiceImpl implements AuthService {
                 .avatarUrl(loginUser.getAvatarUrl())
                 .roles(loginUser.getRoles())
                 .permissions(loginUser.getPermissions())
+                .mustChangePassword(loginUser.getMustChangePassword())
                 .build();
     }
 

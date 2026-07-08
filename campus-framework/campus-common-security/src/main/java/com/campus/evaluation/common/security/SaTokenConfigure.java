@@ -7,6 +7,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Sa-Token 路由拦截配置
@@ -37,6 +39,19 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             SaRouter.match("/**")
                     .notMatch(EXCLUDE_PATHS)
                     .check(r -> StpUtil.checkLogin());
+
+            // 学校端用户管理接口需要 school_admin 角色
+            List<String> adminPaths = Arrays.asList(
+                    "/school/admin-users/**",
+                    "/school/staff-users/**",
+                    "/school/student-users/**",
+                    "/school/roles/**"
+            );
+            SaRouter.match(adminPaths)
+                    .check(r -> {
+                        StpUtil.checkLogin();
+                        StpUtil.checkRole("school_admin");
+                    });
         })).addPathPatterns("/**");
     }
 }

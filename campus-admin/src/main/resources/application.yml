@@ -68,3 +68,5 @@ campus:
     prefix: Bearer
     expire-seconds: 86400
     header-name: Authorization
+  security:
+    default-password: "123456"
