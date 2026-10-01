@@ -97,7 +97,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
         LambdaQueryWrapper<AuthUserAccount> wrapper = new LambdaQueryWrapper<AuthUserAccount>()
                 .in(AuthUserAccount::getId, finalUserIds)
                 .eq(status != null && !status.isEmpty(), AuthUserAccount::getStatus,
-                        "enabled".equals(status) ? "active" : status);
+                        status);
 
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(AuthUserAccount::getUsername, keyword)
@@ -126,7 +126,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
 
         return UserDetailVO.builder()
                 .id(account.getId()).username(account.getUsername()).realName(profile.getRealName())
-                .userType(profile.getRoleType()).phone(account.getPhone()).email(account.getEmail())
+                .userType(profile.getRoleType()).roleType(profile.getRoleType()).phone(account.getPhone()).email(account.getEmail())
                 .status(account.getStatus()).tenantId(account.getTenantId())
                 .schoolId(userAccountMapper.selectSchoolIdByTenantId(tenantId))
                 .avatarFileId(account.getAvatarFileId())
@@ -270,7 +270,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
         AuthPersonProfile profile = getProfileByUserId(id);
         validateIsStaff(profile);
 
-        account.setStatus("enabled".equals(dto.getStatus()) ? "active" : "disabled");
+        account.setStatus(dto.getStatus());
         userAccountMapper.updateById(account);
     }
 
@@ -333,6 +333,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
                 .id(acc.getId()).username(acc.getUsername())
                 .realName(profile != null ? profile.getRealName() : null)
                 .userType(profile != null ? profile.getRoleType() : null)
+                .roleType(profile != null ? profile.getRoleType() : null)
                 .phone(acc.getPhone()).email(acc.getEmail())
                 .status(acc.getStatus()).tenantId(acc.getTenantId())
                 .schoolId(userAccountMapper.selectSchoolIdByTenantId(acc.getTenantId()))

@@ -31,9 +31,11 @@ public class TenantInterceptor implements HandlerInterceptor {
         } else {
             String tenantIdStr = request.getHeader(CommonConstants.HEADER_TENANT_ID);
             if (tenantIdStr != null && !tenantIdStr.isEmpty()) {
-                context.setTenantId(Long.parseLong(tenantIdStr));
-            } else {
-                context.setTenantId(CommonConstants.DEFAULT_TENANT_ID);
+                try {
+                    context.setTenantId(Long.parseLong(tenantIdStr));
+                } catch (NumberFormatException ex) {
+                    log.warn("Invalid tenant header: {}", tenantIdStr);
+                }
             }
         }
 

@@ -31,9 +31,11 @@ public class SchoolStudentUserController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String grade,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return R.ok(studentUserService.list(keyword, status, classId, grade, pageNum, pageSize));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        int currentPage = page != null ? page : (pageNum != null ? pageNum : 1);
+        return R.ok(studentUserService.list(keyword, status, classId, grade, currentPage, pageSize));
     }
 
     @Operation(summary = "查看学生详情")

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @Tag(name = "服务组织管理")
 @RestController
 @RequestMapping("/school/service-orgs")
+@SaCheckRole("school_admin")
 @RequiredArgsConstructor
 public class ServiceOrgController {
 
@@ -29,9 +31,11 @@ public class ServiceOrgController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long parentId,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return R.ok(serviceOrgService.list(keyword, status, parentId, pageNum, pageSize));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        int currentPage = page != null ? page : (pageNum != null ? pageNum : 1);
+        return R.ok(serviceOrgService.list(keyword, status, parentId, currentPage, pageSize));
     }
 
     @Operation(summary = "服务组织树结构")

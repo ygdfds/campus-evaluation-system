@@ -26,6 +26,9 @@ public class PageResult<T> implements Serializable {
     /** 当前页码 */
     private int pageNum;
 
+    /** Formal API contract field; pageNum remains for compatibility. */
+    private int page;
+
     /** 每页大小 */
     private int pageSize;
 
@@ -38,7 +41,18 @@ public class PageResult<T> implements Serializable {
         this.total = total;
         this.records = records;
         this.pageNum = pageNum;
+        this.page = pageNum;
         this.pageSize = pageSize;
         this.totalPages = (int) Math.ceil((double) total / pageSize);
+    }
+
+    public void setPageNum(int pageNum) {
+        this.pageNum = pageNum;
+        this.page = pageNum;
+    }
+
+    public void setPage(int page) {
+        this.page = page;
+        this.pageNum = page;
     }
 }

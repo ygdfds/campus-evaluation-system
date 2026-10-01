@@ -29,12 +29,12 @@ public class RoleServiceImpl implements RoleService {
     );
 
     @Override
-    public List<RoleOptionVO> getOptions(String userType) {
-        if (userType == null || userType.isEmpty()) {
+    public List<RoleOptionVO> getOptions(String roleType) {
+        if (roleType == null || roleType.isEmpty()) {
             // 返回所有可分配角色（不含 system_admin）
             return concatAll();
         }
-        return switch (userType) {
+        return switch (roleType) {
             case "admin" -> ADMIN_ROLES;
             case "staff" -> STAFF_ROLES;
             case "student" -> STUDENT_ROLES;

@@ -88,6 +88,7 @@ public class FileResourceServiceImpl implements FileResourceService {
     @Override
     public byte[] preview(Long id) {
         FileResource entity = getEntityById(id);
+        checkAccess(entity);
         // 预览不做租户校验（公开访问），后续可根据 bizType 区分
         return storageService.download(entity.getObjectKey());
     }
@@ -116,8 +117,8 @@ public class FileResourceServiceImpl implements FileResourceService {
      */
     private void checkAccess(FileResource entity) {
         Long tenantId = SecurityUtils.getTenantId();
-        if (entity.getTenantId() != null && tenantId != null
-                && !entity.getTenantId().equals(tenantId)) {
+        if (entity.getTenantId() != null
+                && (tenantId == null || !entity.getTenantId().equals(tenantId))) {
             throw new BusinessException(403, "无权访问该文件");
         }
     }

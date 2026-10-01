@@ -29,6 +29,9 @@ public class LoginUser implements Serializable {
     /** 用户类型（system_admin/school_admin/staff/student） */
     private String userType;
 
+    /** Formal API field; userType remains for compatibility. */
+    private String roleType;
+
     /** 租户ID */
     private Long tenantId;
 

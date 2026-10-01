@@ -29,7 +29,6 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             "/favicon.ico",
             "/auth/login",
             "/auth/captcha",
-            "/files/*/preview"
     };
 
     @Override
@@ -58,6 +57,19 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                     .check(r -> {
                         StpUtil.checkLogin();
                         StpUtil.checkRole("school_admin");
+                    });
+
+            // 学生评价接口仅 student 角色
+            List<String> studentPaths = Arrays.asList(
+                    "/student/evaluation/tasks",
+                    "/student/evaluation/tasks/**",
+                    "/student/evaluation/submissions",
+                    "/student/evaluation/submissions/**"
+            );
+            SaRouter.match(studentPaths)
+                    .check(r -> {
+                        StpUtil.checkLogin();
+                        StpUtil.checkRole("student");
                     });
         })).addPathPatterns("/**");
     }

@@ -24,7 +24,8 @@ public class RoleController {
     @Operation(summary = "查询可分配角色选项")
     @GetMapping("/options")
     public R<List<RoleOptionVO>> options(
+            @RequestParam(required = false) String roleType,
             @RequestParam(required = false) String userType) {
-        return R.ok(roleService.getOptions(userType));
+        return R.ok(roleService.getOptions(roleType != null ? roleType : userType));
     }
 }

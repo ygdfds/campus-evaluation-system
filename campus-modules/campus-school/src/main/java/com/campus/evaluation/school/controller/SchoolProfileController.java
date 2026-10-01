@@ -9,11 +9,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "学校资料管理")
 @RestController
 @RequestMapping("/school/profile")
+@SaCheckRole("school_admin")
 @RequiredArgsConstructor
 public class SchoolProfileController {
 

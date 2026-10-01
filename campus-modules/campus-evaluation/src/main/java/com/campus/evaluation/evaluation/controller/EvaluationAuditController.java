@@ -27,9 +27,11 @@ public class EvaluationAuditController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String formType,
             @RequestParam(required = false) Long submitterId,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return R.ok(auditService.list(keyword, status, formType, submitterId, pageNum, pageSize));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        int currentPage = page != null ? page : (pageNum != null ? pageNum : 1);
+        return R.ok(auditService.list(keyword, status, formType, submitterId, currentPage, pageSize));
     }
 
     @Operation(summary = "审核详情")

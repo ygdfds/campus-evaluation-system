@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface RoleService {
 
-    List<RoleOptionVO> getOptions(String userType);
+    List<RoleOptionVO> getOptions(String roleType);
 }

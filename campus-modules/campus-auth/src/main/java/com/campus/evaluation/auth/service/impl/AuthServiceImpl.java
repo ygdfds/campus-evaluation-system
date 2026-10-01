@@ -120,6 +120,7 @@ public class AuthServiceImpl implements AuthService {
         loginUser.setUsername(account.getUsername());
         loginUser.setRealName(realName);
         loginUser.setUserType(userType);
+        loginUser.setRoleType(userType);
         loginUser.setTenantId(tenantId);
         loginUser.setSchoolId(schoolId);
         loginUser.setAvatarUrl(null); // 头像 URL 暂不查询 file_resource
@@ -157,6 +158,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(account.getUsername())
                 .realName(realName)
                 .userType(userType)
+                .roleType(userType)
                 .tenantId(tenantId)
                 .schoolId(schoolId)
                 .roles(roleCodes)
@@ -186,6 +188,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(loginUser.getUsername())
                 .realName(loginUser.getRealName())
                 .userType(loginUser.getUserType())
+                .roleType(loginUser.getRoleType() != null ? loginUser.getRoleType() : loginUser.getUserType())
                 .tenantId(loginUser.getTenantId())
                 .schoolId(loginUser.getSchoolId())
                 .avatarUrl(loginUser.getAvatarUrl())
