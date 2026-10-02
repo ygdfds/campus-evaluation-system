@@ -4,18 +4,21 @@ import com.campus.evaluation.common.core.domain.R;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 健康检查接口
+ * Health check endpoints.
  */
 @Slf4j
 @RestController
@@ -23,66 +26,92 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class HealthController {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final JdbcTemplate jdbcTemplate;
     private final StringRedisTemplate stringRedisTemplate;
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    /**
-     * 基础健康检查
-     */
     @GetMapping
-    public R<Map<String, Object>> health() {
+    public ResponseEntity<R<Map<String, Object>>> health() {
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("status", "UP");
+        Map<String, Object> database = new LinkedHashMap<>();
+        Map<String, Object> redis = new LinkedHashMap<>();
+        boolean databaseUp = checkDatabase(database);
+        boolean redisUp = checkRedis(redis);
+        boolean allUp = databaseUp && redisUp;
+
+        Map<String, Object> components = new LinkedHashMap<>();
+        components.put("database", database);
+        components.put("redis", redis);
+
+        data.put("status", allUp ? "UP" : "DOWN");
         data.put("app", "campus-evaluation-system");
         data.put("java", System.getProperty("java.version"));
         data.put("time", LocalDateTime.now().format(FORMATTER));
-        return R.ok(data);
+        data.put("components", components);
+
+        if (allUp) {
+            return ResponseEntity.ok(R.ok(data));
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(R.fail(503, "Service dependencies unavailable", data, "SERVICE_UNAVAILABLE"));
     }
 
-    /**
-     * 数据库连通性检查
-     */
     @GetMapping("/db")
-    public R<Map<String, Object>> healthDb() {
+    public ResponseEntity<R<Map<String, Object>>> healthDb() {
         Map<String, Object> data = new LinkedHashMap<>();
+        boolean up = checkDatabase(data);
+        if (up) {
+            return ResponseEntity.ok(R.ok(data));
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(R.fail(503, "Database connection unavailable", data, "DB_UNAVAILABLE"));
+    }
+
+    @GetMapping("/redis")
+    public ResponseEntity<R<Map<String, Object>>> healthRedis() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        boolean up = checkRedis(data);
+        if (up) {
+            return ResponseEntity.ok(R.ok(data));
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(R.fail(503, "Redis connection unavailable", data, "REDIS_UNAVAILABLE"));
+    }
+
+    private boolean checkDatabase(Map<String, Object> data) {
         try {
             Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
             data.put("status", "UP");
-            data.put("database", "MySQL");
-            data.put("query_result", result);
-            return R.ok(data);
+            data.put("type", "MySQL");
+            data.put("queryResult", result);
+            return true;
         } catch (Exception e) {
-            log.error("数据库连接检查失败: {}", e.getMessage());
+            log.error("Database health check failed: {}", e.getMessage());
             data.put("status", "DOWN");
-            data.put("database", "MySQL");
+            data.put("type", "MySQL");
             data.put("error", e.getMessage());
-            return R.fail(503, "数据库连接异常");
+            return false;
         }
     }
 
-    /**
-     * Redis 连通性检查
-     */
-    @GetMapping("/redis")
-    public R<Map<String, Object>> healthRedis() {
-        Map<String, Object> data = new LinkedHashMap<>();
+    private boolean checkRedis(Map<String, Object> data) {
         try {
             String testKey = "health:check:" + System.currentTimeMillis();
-            stringRedisTemplate.opsForValue().set(testKey, "ping", java.time.Duration.ofSeconds(10));
+            stringRedisTemplate.opsForValue().set(testKey, "ping", Duration.ofSeconds(10));
             String value = stringRedisTemplate.opsForValue().get(testKey);
             stringRedisTemplate.delete(testKey);
-            data.put("status", "UP");
-            data.put("redis", "connected");
-            data.put("ping_result", "ping".equals(value) ? "OK" : "FAIL");
-            return R.ok(data);
+            boolean pingOk = "ping".equals(value);
+            data.put("status", pingOk ? "UP" : "DOWN");
+            data.put("type", "Redis");
+            data.put("pingResult", pingOk ? "OK" : "FAIL");
+            return pingOk;
         } catch (Exception e) {
-            log.error("Redis 连接检查失败: {}", e.getMessage());
+            log.error("Redis health check failed: {}", e.getMessage());
             data.put("status", "DOWN");
-            data.put("redis", "disconnected");
+            data.put("type", "Redis");
             data.put("error", e.getMessage());
-            return R.fail(503, "Redis 连接异常");
+            return false;
         }
     }
 }

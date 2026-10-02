@@ -89,6 +89,12 @@ public class R<T> implements Serializable {
         return r;
     }
 
+    public static <T> R<T> fail(int code, String message, T data, String errKey) {
+        R<T> r = fail(code, message, errKey);
+        r.setData(data);
+        return r;
+    }
+
     private static String now() {
         return LocalDateTime.now(ZoneId.of("Asia/Shanghai")).format(TIMESTAMP_FORMATTER);
     }
