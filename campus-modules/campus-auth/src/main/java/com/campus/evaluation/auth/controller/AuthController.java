@@ -1,5 +1,6 @@
 package com.campus.evaluation.auth.controller;
 
+import com.campus.evaluation.auth.domain.dto.ChangePasswordDTO;
 import com.campus.evaluation.auth.domain.dto.LoginRequest;
 import com.campus.evaluation.auth.domain.vo.CurrentUserVO;
 import com.campus.evaluation.auth.domain.vo.LoginResponse;
@@ -18,12 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-/**
- * 认证授权控制器
- */
-@Tag(name = "认证授权", description = "登录、登出、用户信息、权限查询")
+@Tag(name = "Auth", description = "Authentication and authorization")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -31,63 +31,61 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * 登录
-     */
-    @Operation(summary = "用户登录")
+    @Operation(summary = "Login")
     @PostMapping("/login")
     public R<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        LoginResponse response = authService.login(request, httpRequest);
-        return R.ok(response);
+        return R.ok(authService.login(request, httpRequest));
     }
 
-    /**
-     * 登出
-     */
-    @Operation(summary = "用户登出")
+    @Operation(summary = "Logout")
     @PostMapping("/logout")
     public R<Void> logout() {
         authService.logout();
-        return R.ok(null, "登出成功");
+        return R.ok(null, "logout success");
     }
 
-    /**
-     * 获取当前用户信息
-     */
-    @Operation(summary = "获取当前用户信息")
+    @Operation(summary = "Current user")
     @GetMapping("/me")
     public R<CurrentUserVO> me() {
-        CurrentUserVO vo = authService.getCurrentUser();
-        return R.ok(vo);
+        return R.ok(authService.getCurrentUser());
     }
 
-    /**
-     * 获取当前用户权限信息
-     */
-    @Operation(summary = "获取权限信息")
+    @Operation(summary = "Current permissions")
     @GetMapping("/permissions")
     public R<PermissionVO> permissions() {
-        PermissionVO vo = authService.getPermissions();
-        return R.ok(vo);
+        return R.ok(authService.getPermissions());
     }
 
-    /**
-     * 获取前端路由（预留接口）
-     */
-    @Operation(summary = "获取前端路由（预留）")
+    @Operation(summary = "Authorized frontend route names")
     @GetMapping("/routes")
     public R<Map<String, Object>> routes() {
-        // 预留接口，返回空数据
-        return R.ok(Collections.singletonMap("routes", Collections.emptyList()));
+        CurrentUserVO currentUser = authService.getCurrentUser();
+        Map<String, List<String>> routeMap = Map.of(
+                "system_admin", List.of("AdminDashboard", "AdminTenantList", "AdminOnboardingAudit", "AdminRoleManagement"),
+                "school_admin", List.of("SchoolDashboard", "SchoolInfo", "SchoolDeptList", "SchoolStaffList", "SchoolStudentList", "SchoolAdminList"),
+                "staff", List.of("StaffDashboard", "StaffEvalForms", "StaffFeedback", "StaffReports"),
+                "student", List.of("StudentDashboard", "StudentEvaluationTasks", "StudentEvalHistory", "StudentComplaint")
+        );
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("roleType", currentUser.getRoleType());
+        payload.put("routes", routeMap.getOrDefault(currentUser.getRoleType(), Collections.emptyList()));
+        return R.ok(payload);
     }
 
-    /**
-     * 验证码（预留接口）
-     */
-    @Operation(summary = "获取验证码（预留）")
+    @Operation(summary = "Captcha capability")
     @GetMapping("/captcha")
     public R<Map<String, Object>> captcha() {
-        // 预留接口，暂不启用验证码
-        return R.ok(Collections.singletonMap("captchaEnabled", false));
+        return R.ok(Map.of(
+                "enabled", false,
+                "required", false,
+                "reason", "captcha service is not enabled in phase A"
+        ));
+    }
+
+    @Operation(summary = "Change password")
+    @PostMapping("/change-password")
+    public R<Void> changePassword(@Valid @RequestBody ChangePasswordDTO request) {
+        authService.changePassword(request);
+        return R.ok(null, "password changed");
     }
 }

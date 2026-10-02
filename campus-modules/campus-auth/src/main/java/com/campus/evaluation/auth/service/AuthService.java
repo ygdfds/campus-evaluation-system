@@ -1,5 +1,6 @@
 package com.campus.evaluation.auth.service;
 
+import com.campus.evaluation.auth.domain.dto.ChangePasswordDTO;
 import com.campus.evaluation.auth.domain.dto.LoginRequest;
 import com.campus.evaluation.auth.domain.vo.CurrentUserVO;
 import com.campus.evaluation.auth.domain.vo.LoginResponse;
@@ -30,4 +31,6 @@ public interface AuthService {
      * 获取当前用户权限信息
      */
     PermissionVO getPermissions();
+
+    void changePassword(ChangePasswordDTO request);
 }
