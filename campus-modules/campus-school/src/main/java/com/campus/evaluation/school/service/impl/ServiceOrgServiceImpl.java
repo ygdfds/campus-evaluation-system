@@ -10,6 +10,7 @@ import com.campus.evaluation.school.domain.entity.ServiceOrgUnit;
 import com.campus.evaluation.school.domain.vo.OrgTreeVO;
 import com.campus.evaluation.school.domain.vo.ServiceOrgVO;
 import com.campus.evaluation.school.mapper.ServiceOrgMapper;
+import com.campus.evaluation.school.mapper.ServiceItemMapper;
 import com.campus.evaluation.school.service.ServiceOrgService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class ServiceOrgServiceImpl implements ServiceOrgService {
 
     private final ServiceOrgMapper serviceOrgMapper;
+    private final ServiceItemMapper serviceItemMapper;
 
     @Override
     public PageResult<ServiceOrgVO> list(String keyword, String status, Long parentId, int pageNum, int pageSize) {
@@ -62,6 +64,7 @@ public class ServiceOrgServiceImpl implements ServiceOrgService {
         entity.setCode(dto.getCode());
         entity.setType(dto.getType());
         entity.setStatus(dto.getStatus());
+        validateParentChain(tenantId, dto.getParentId(), null);
         serviceOrgMapper.insert(entity);
         return toVO(entity);
     }
@@ -71,6 +74,7 @@ public class ServiceOrgServiceImpl implements ServiceOrgService {
         Long tenantId = requireTenantId();
         ServiceOrgUnit entity = getByIdAndTenant(id, tenantId);
         checkCodeUnique(tenantId, dto.getCode(), id);
+        validateParentChain(tenantId, dto.getParentId(), id);
         entity.setName(dto.getName());
         entity.setCode(dto.getCode());
         entity.setType(dto.getType());
@@ -91,6 +95,12 @@ public class ServiceOrgServiceImpl implements ServiceOrgService {
         );
         if (childCount > 0) {
             throw new BusinessException(409, "存在子组织，无法删除，请先处理子组织");
+        }
+        long itemCount = serviceItemMapper.selectCount(new LambdaQueryWrapper<com.campus.evaluation.school.domain.entity.ServiceItem>()
+                .eq(com.campus.evaluation.school.domain.entity.ServiceItem::getTenantId, tenantId)
+                .eq(com.campus.evaluation.school.domain.entity.ServiceItem::getServiceOrgId, id));
+        if (itemCount > 0 || serviceOrgMapper.countAssignedUsers(id, tenantId) > 0) {
+            throw new BusinessException(409, "Organization still has service item or user associations");
         }
         serviceOrgMapper.deleteById(id);
     }
@@ -113,6 +123,21 @@ public class ServiceOrgServiceImpl implements ServiceOrgService {
                         .ne(excludeId != null, ServiceOrgUnit::getId, excludeId)
         );
         if (count > 0) throw new BusinessException(409, "组织编码已存在");
+    }
+
+    private void validateParentChain(Long tenantId, Long parentId, Long selfId) {
+        if (parentId == null) return;
+        ServiceOrgUnit current = getByIdAndTenant(parentId, tenantId);
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        while (current != null) {
+            if (!visited.add(current.getId()) || current.getId().equals(selfId)) {
+                throw new BusinessException(400, "Parent organization cannot be self or a descendant");
+            }
+            current = current.getParentId() == null ? null : serviceOrgMapper.selectOne(
+                    new LambdaQueryWrapper<ServiceOrgUnit>()
+                            .eq(ServiceOrgUnit::getId, current.getParentId())
+                            .eq(ServiceOrgUnit::getTenantId, tenantId));
+        }
     }
 
     private Long requireTenantId() {

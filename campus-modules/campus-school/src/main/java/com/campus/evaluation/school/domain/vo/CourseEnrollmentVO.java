@@ -4,21 +4,16 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
-public class CourseVO {
+public class CourseEnrollmentVO {
     private Long id;
     private Long tenantId;
     private Long schoolId;
-    private Long teachingOrgId;
-    private String teachingOrgName;
-    private String courseCode;
-    private String courseName;
-    private String term;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
+    private Long courseId;
+    private Long studentId;
+    private Long classGroupId;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

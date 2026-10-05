@@ -10,6 +10,8 @@ import com.campus.evaluation.school.domain.entity.TeachingOrgUnit;
 import com.campus.evaluation.school.domain.vo.OrgTreeVO;
 import com.campus.evaluation.school.domain.vo.TeachingOrgVO;
 import com.campus.evaluation.school.mapper.TeachingOrgMapper;
+import com.campus.evaluation.school.mapper.CourseMapper;
+import com.campus.evaluation.school.mapper.ClassGroupMapper;
 import com.campus.evaluation.school.service.TeachingOrgService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 public class TeachingOrgServiceImpl implements TeachingOrgService {
 
     private final TeachingOrgMapper teachingOrgMapper;
+    private final CourseMapper courseMapper;
+    private final ClassGroupMapper classGroupMapper;
 
     @Override
     public PageResult<TeachingOrgVO> list(String keyword, String status, Long parentId, int pageNum, int pageSize) {
@@ -55,6 +59,7 @@ public class TeachingOrgServiceImpl implements TeachingOrgService {
         Long tenantId = requireTenantId();
         checkCodeUnique(tenantId, dto.getCode(), null);
         validateParentId(dto.getParentId(), null);
+        validateParentChain(tenantId, dto.getParentId(), null);
 
         TeachingOrgUnit entity = new TeachingOrgUnit();
         entity.setTenantId(tenantId);
@@ -74,6 +79,7 @@ public class TeachingOrgServiceImpl implements TeachingOrgService {
         TeachingOrgUnit entity = getByIdAndTenant(id, tenantId);
         checkCodeUnique(tenantId, dto.getCode(), id);
         validateParentId(dto.getParentId(), id);
+        validateParentChain(tenantId, dto.getParentId(), id);
 
         entity.setName(dto.getName());
         entity.setCode(dto.getCode());
@@ -95,6 +101,15 @@ public class TeachingOrgServiceImpl implements TeachingOrgService {
         );
         if (childCount > 0) {
             throw new BusinessException(409, "存在子组织，无法删除，请先处理子组织");
+        }
+        long courseCount = courseMapper.selectCount(new LambdaQueryWrapper<com.campus.evaluation.school.domain.entity.Course>()
+                .eq(com.campus.evaluation.school.domain.entity.Course::getTenantId, tenantId)
+                .eq(com.campus.evaluation.school.domain.entity.Course::getTeachingOrgId, id));
+        long classCount = classGroupMapper.selectCount(new LambdaQueryWrapper<com.campus.evaluation.school.domain.entity.ClassGroup>()
+                .eq(com.campus.evaluation.school.domain.entity.ClassGroup::getTenantId, tenantId)
+                .eq(com.campus.evaluation.school.domain.entity.ClassGroup::getTeachingOrgId, id));
+        if (courseCount > 0 || classCount > 0 || teachingOrgMapper.countAssignedUsers(id, tenantId) > 0) {
+            throw new BusinessException(409, "Organization still has course, class, or user associations");
         }
         teachingOrgMapper.deleteById(id);
     }
@@ -120,6 +135,21 @@ public class TeachingOrgServiceImpl implements TeachingOrgService {
         );
         if (count > 0) {
             throw new BusinessException(409, "组织编码已存在");
+        }
+    }
+
+    private void validateParentChain(Long tenantId, Long parentId, Long selfId) {
+        if (parentId == null) return;
+        TeachingOrgUnit current = getByIdAndTenant(parentId, tenantId);
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        while (current != null) {
+            if (!visited.add(current.getId()) || current.getId().equals(selfId)) {
+                throw new BusinessException(400, "Parent organization cannot be self or a descendant");
+            }
+            current = current.getParentId() == null ? null : teachingOrgMapper.selectOne(
+                    new LambdaQueryWrapper<TeachingOrgUnit>()
+                            .eq(TeachingOrgUnit::getId, current.getParentId())
+                            .eq(TeachingOrgUnit::getTenantId, tenantId));
         }
     }
 

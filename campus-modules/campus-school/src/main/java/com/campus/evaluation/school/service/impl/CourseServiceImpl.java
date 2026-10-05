@@ -36,6 +36,7 @@ public class CourseServiceImpl implements CourseService {
         LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<Course>()
                 .eq(Course::getTenantId, tenantId)
                 .eq(teachingOrgId != null, Course::getTeachingOrgId, teachingOrgId)
+                .eq(status != null && !status.isBlank(), Course::getStatus, status)
                 .like(keyword != null && !keyword.isEmpty(), Course::getCourseName, keyword)
                 .orderByAsc(Course::getId);
         Page<Course> page = courseMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
@@ -72,6 +73,7 @@ public class CourseServiceImpl implements CourseService {
                 .teachingOrgId(course.getTeachingOrgId()).teachingOrgName(orgName)
                 .courseCode(course.getCourseCode()).courseName(course.getCourseName())
                 .term(course.getTerm()).startAt(course.getStartAt()).endAt(course.getEndAt())
+                .status(course.getStatus())
                 .teachers(teacherInfos).enrollmentCount((int) enrollmentCount)
                 .createdAt(course.getCreatedAt()).updatedAt(course.getUpdatedAt())
                 .build();
@@ -92,6 +94,7 @@ public class CourseServiceImpl implements CourseService {
         entity.setTerm(dto.getTerm());
         entity.setStartAt(dto.getStartAt());
         entity.setEndAt(dto.getEndAt());
+        entity.setStatus(dto.getStatus() == null ? "active" : dto.getStatus());
         courseMapper.insert(entity);
         return toVO(entity);
     }
@@ -109,6 +112,7 @@ public class CourseServiceImpl implements CourseService {
         entity.setTerm(dto.getTerm());
         entity.setStartAt(dto.getStartAt());
         entity.setEndAt(dto.getEndAt());
+        if (dto.getStatus() != null) entity.setStatus(dto.getStatus());
         courseMapper.updateById(entity);
         return toVO(entity);
     }
@@ -117,6 +121,17 @@ public class CourseServiceImpl implements CourseService {
     public void delete(Long id) {
         Long tenantId = requireTenantId();
         getByIdAndTenant(id, tenantId);
+        long enrollmentCount = courseEnrollmentMapper.selectCount(
+                new LambdaQueryWrapper<CourseEnrollment>()
+                        .eq(CourseEnrollment::getCourseId, id)
+                        .eq(CourseEnrollment::getTenantId, tenantId));
+        long teacherCount = courseTeacherMapper.selectCount(
+                new LambdaQueryWrapper<CourseTeacher>()
+                        .eq(CourseTeacher::getCourseId, id)
+                        .eq(CourseTeacher::getTenantId, tenantId));
+        if (enrollmentCount > 0 || teacherCount > 0) {
+            throw new BusinessException(409, "课程已关联教师或学生，不能删除");
+        }
         courseMapper.deleteById(id);
     }
 
@@ -126,7 +141,17 @@ public class CourseServiceImpl implements CourseService {
         Long tenantId = requireTenantId();
         getByIdAndTenant(id, tenantId);
 
-        // Soft delete existing teachers
+        List<Long> teacherIds = dto.getTeacherIds().stream().distinct().toList();
+        if (teacherIds.size() != dto.getTeacherIds().size()) {
+            throw new BusinessException(400, "教师列表包含重复账号");
+        }
+        for (Long teacherId : teacherIds) {
+            if (teacherId == null || courseTeacherMapper.countActiveStaff(teacherId, tenantId) == 0) {
+                throw new BusinessException(400, "任课教师必须是本校有效教职工");
+            }
+        }
+
+        // Validate all replacements before changing existing relations.
         List<CourseTeacher> existing = courseTeacherMapper.selectList(
                 new LambdaQueryWrapper<CourseTeacher>()
                         .eq(CourseTeacher::getCourseId, id)
@@ -138,7 +163,7 @@ public class CourseServiceImpl implements CourseService {
 
         // Insert new teachers
         Long schoolId = SecurityUtils.getSchoolId();
-        for (Long teacherId : dto.getTeacherIds()) {
+        for (Long teacherId : teacherIds) {
             CourseTeacher ct = new CourseTeacher();
             ct.setTenantId(tenantId);
             ct.setSchoolId(schoolId);
@@ -154,6 +179,7 @@ public class CourseServiceImpl implements CourseService {
         Long tenantId = requireTenantId();
         LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<Course>()
                 .eq(Course::getTenantId, tenantId)
+                .eq(Course::getStatus, "active")
                 .eq(teachingOrgId != null, Course::getTeachingOrgId, teachingOrgId)
                 .orderByAsc(Course::getCourseName);
         return courseMapper.selectList(wrapper).stream()
@@ -211,6 +237,7 @@ public class CourseServiceImpl implements CourseService {
                 .teachingOrgId(e.getTeachingOrgId())
                 .courseCode(e.getCourseCode()).courseName(e.getCourseName())
                 .term(e.getTerm()).startAt(e.getStartAt()).endAt(e.getEndAt())
+                .status(e.getStatus())
                 .createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt())
                 .build();
     }

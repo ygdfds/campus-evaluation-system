@@ -19,6 +19,7 @@ public class CourseDetailVO {
     private String term;
     private LocalDateTime startAt;
     private LocalDateTime endAt;
+    private String status;
     private List<TeacherInfo> teachers;
     private Integer enrollmentCount;
     private LocalDateTime createdAt;

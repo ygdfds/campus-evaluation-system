@@ -35,4 +35,7 @@ public class CourseDTO {
 
     @Schema(description = "结束时间")
     private LocalDateTime endAt;
+
+    @Schema(description = "状态：active/disabled")
+    private String status = "active";
 }
