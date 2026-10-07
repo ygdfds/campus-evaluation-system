@@ -18,6 +18,8 @@ Get-ChildItem .\sql\mysql\*.sql | Sort-Object Name | ForEach-Object {
 }
 Get-Content .\sql\12_phase4_user_management.sql | mysql -uroot -p
 Get-Content .\sql\13_phase5_evaluation_form.sql | mysql -uroot -p
+Get-Content .\sql\15_phase7_school_management.sql | mysql -uroot -p
+Get-Content .\sql\16_phase8_platform_management.sql | mysql -uroot -p
 Get-Content .\sql\schema_check.sql | mysql -uroot -p
 ```
 

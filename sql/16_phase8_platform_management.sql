@@ -1,5 +1,12 @@
 USE campus_evaluation_system;
 
+CREATE TABLE IF NOT EXISTS sys_schema_migration (
+  version VARCHAR(64) NOT NULL COMMENT 'Migration version',
+  description VARCHAR(255) NOT NULL COMMENT 'Migration description',
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Schema migration ledger';
+
 CREATE TABLE IF NOT EXISTS pf_tenant_status_log (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '租户状态变更日志ID',
   tenant_id BIGINT NOT NULL COMMENT '租户ID',
@@ -55,3 +62,7 @@ SELECT r.id, p.id, NOW(), NOW(), 0
 FROM auth_role r
 JOIN auth_permission p ON p.permission_code LIKE 'admin.%' AND p.deleted = 0
 WHERE r.role_code = 'system_admin' AND r.deleted = 0;
+
+INSERT INTO sys_schema_migration (version, description)
+VALUES ('16_phase8_platform_management', 'Add platform management tenant logs and plan fields')
+ON DUPLICATE KEY UPDATE applied_at = applied_at;

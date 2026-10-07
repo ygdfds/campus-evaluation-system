@@ -8,7 +8,9 @@ For a new local database:
 
 1. Run `mysql/*.sql` in lexical order from `00_create_database.sql` through `11_stats.sql`.
 2. Run `99_init_data.sql` for development seed data.
-3. Run incremental migrations in this directory in numeric order: `12_phase4_user_management.sql`, `13_phase5_evaluation_form.sql`.
+3. Run incremental migrations in this directory in numeric order:
+   `12_phase4_user_management.sql`, `13_phase5_evaluation_form.sql`,
+   `15_phase7_school_management.sql`, `16_phase8_platform_management.sql`.
 
 For an existing database:
 

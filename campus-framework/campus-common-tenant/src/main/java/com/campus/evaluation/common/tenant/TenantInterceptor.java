@@ -41,7 +41,14 @@ public class TenantInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         TenantContextHolder.clear();
 
-        String uri = request.getRequestURI();
+        String uri = request.getServletPath();
+        if (!StringUtils.hasText(uri)) {
+            uri = request.getRequestURI();
+            String contextPath = request.getContextPath();
+            if (StringUtils.hasText(contextPath) && uri.startsWith(contextPath)) {
+                uri = uri.substring(contextPath.length());
+            }
+        }
         if (matches(uri, PUBLIC_PATHS)) {
             return true;
         }

@@ -1,5 +1,12 @@
 USE campus_evaluation_system;
 
+CREATE TABLE IF NOT EXISTS sys_schema_migration (
+  version VARCHAR(64) NOT NULL COMMENT 'Migration version',
+  description VARCHAR(255) NOT NULL COMMENT 'Migration description',
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Schema migration ledger';
+
 -- Add the lifecycle state required by school course management.
 SET @course_status_exists = (
   SELECT COUNT(*)
@@ -52,3 +59,7 @@ SET @course_teacher_index_sql = IF(
 PREPARE course_teacher_index_stmt FROM @course_teacher_index_sql;
 EXECUTE course_teacher_index_stmt;
 DEALLOCATE PREPARE course_teacher_index_stmt;
+
+INSERT INTO sys_schema_migration (version, description)
+VALUES ('15_phase7_school_management', 'Add school management status and association indexes')
+ON DUPLICATE KEY UPDATE applied_at = applied_at;
