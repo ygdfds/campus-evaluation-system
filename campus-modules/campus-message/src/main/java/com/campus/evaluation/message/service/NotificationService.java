@@ -12,4 +12,8 @@ public interface NotificationService {
     Map<String, Object> create(Map<String, Object> payload);
 
     Map<String, Object> update(Long id, Map<String, Object> payload);
+
+    Map<String, Object> getStaffPreference();
+
+    Map<String, Object> updateStaffPreference(Map<String, Object> payload);
 }

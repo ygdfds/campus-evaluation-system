@@ -8,4 +8,6 @@ public interface EvaluationWindowService {
     EvaluationWindowVO getWindow(Long formId);
 
     void saveWindow(Long formId, EvaluationWindowSaveDTO dto);
+
+    void closeWindow(Long formId);
 }

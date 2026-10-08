@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "教职工管理", description = "学校端教职工账号管理")
 @RestController
-@RequestMapping("/school/staff-users")
+@RequestMapping({"/school/staff-users", "/school/staff"})
 @RequiredArgsConstructor
 public class SchoolStaffUserController {
 

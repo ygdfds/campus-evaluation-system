@@ -22,6 +22,8 @@ public class SchoolProfile implements Serializable {
 
     private Long tenantId;
 
+    private String schoolName;
+
     private String name;
 
     private String address;

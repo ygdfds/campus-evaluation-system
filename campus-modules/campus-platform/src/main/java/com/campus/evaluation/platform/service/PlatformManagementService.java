@@ -112,6 +112,51 @@ public class PlatformManagementService {
     }
 
     @Transactional
+    public Map<String, Object> createTenantAdmin(Long tenantId, AdminUserDTO dto) {
+        if (dto == null || isBlank(dto.getUsername()) || isBlank(dto.getRealName())
+                || isBlank(dto.getPassword())) {
+            throw new BusinessException(400, "用户名、姓名和初始密码不能为空");
+        }
+        if (first("SELECT id FROM pf_tenant WHERE id = ? AND deleted = 0", tenantId) == null) {
+            throw new BusinessException(404, "租户不存在");
+        }
+        if (first("SELECT id FROM auth_user_account WHERE username = ? AND deleted = 0", dto.getUsername()) != null) {
+            throw new BusinessException(409, "用户名已存在");
+        }
+        Map<String, Object> school = first("SELECT id FROM sch_school_profile WHERE tenant_id = ? AND deleted = 0 LIMIT 1", tenantId);
+        if (school == null) {
+            throw new BusinessException(400, "租户尚未建立学校档案");
+        }
+
+        KeyHolder userKh = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement("""
+                    INSERT INTO auth_user_account (tenant_id, username, password_hash, phone, email, status, must_change_password)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                    """, Statement.RETURN_GENERATED_KEYS);
+            ps.setLong(1, tenantId);
+            ps.setString(2, dto.getUsername().trim());
+            ps.setString(3, passwordEncoder.encode(dto.getPassword()));
+            ps.setString(4, dto.getPhone());
+            ps.setString(5, dto.getEmail());
+            ps.setString(6, dto.getStatus() == null ? "active" : dto.getStatus());
+            return ps;
+        }, userKh);
+        Long userId = Objects.requireNonNull(userKh.getKey()).longValue();
+        jdbc.update("INSERT INTO auth_person_profile (tenant_id, user_id, real_name, role_type, department_name) VALUES (?, ?, ?, 'school_admin', '校级管理')",
+                tenantId, userId, dto.getRealName().trim());
+        Long roleId = ensureSchoolAdminRole(tenantId);
+        jdbc.update("INSERT INTO auth_user_role (tenant_id, user_id, role_id, scope_json, created_at, updated_at, deleted) VALUES (?, ?, ?, JSON_OBJECT('schoolIds', JSON_ARRAY(?)), NOW(), NOW(), 0)",
+                tenantId, userId, roleId, school.get("id"));
+        return first("SELECT au.id, au.username, au.phone, au.email, au.status, pp.real_name AS realName, au.created_at AS createdAt FROM auth_user_account au JOIN auth_person_profile pp ON pp.user_id = au.id AND pp.deleted = 0 WHERE au.id = ?",
+                userId);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    @Transactional
     public void changeTenantStatus(Long id, ChangeStatusDTO dto) {
         String status = requireStatus(dto.getStatus(), Set.of("active", "disabled", "frozen"));
         Map<String, Object> tenant = first("SELECT status FROM pf_tenant WHERE id = ? AND deleted = 0", id);

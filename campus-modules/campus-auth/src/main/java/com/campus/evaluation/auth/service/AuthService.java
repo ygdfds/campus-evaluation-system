@@ -7,6 +7,9 @@ import com.campus.evaluation.auth.domain.vo.LoginResponse;
 import com.campus.evaluation.auth.domain.vo.PermissionVO;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 认证授权服务接口
  */
@@ -33,4 +36,8 @@ public interface AuthService {
     PermissionVO getPermissions();
 
     void changePassword(ChangePasswordDTO request);
+
+    Map<String, Object> updateCurrentUser(Map<String, Object> payload);
+
+    List<Map<String, Object>> getLoginLogs();
 }

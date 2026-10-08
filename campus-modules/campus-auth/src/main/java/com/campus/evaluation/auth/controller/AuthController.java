@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +49,16 @@ public class AuthController {
     @GetMapping("/me")
     public R<CurrentUserVO> me() {
         return R.ok(authService.getCurrentUser());
+    }
+
+    @PutMapping("/me")
+    public R<Map<String, Object>> updateMe(@RequestBody Map<String, Object> payload) {
+        return R.ok(authService.updateCurrentUser(payload));
+    }
+
+    @GetMapping("/login-logs")
+    public R<List<Map<String, Object>>> loginLogs() {
+        return R.ok(authService.getLoginLogs());
     }
 
     @Operation(summary = "Current permissions")

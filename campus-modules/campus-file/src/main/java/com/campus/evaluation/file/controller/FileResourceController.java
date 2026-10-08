@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Tag(name = "文件资源管理")
 @RestController
 @RequestMapping("/files")
@@ -36,6 +38,12 @@ public class FileResourceController {
     @GetMapping("/{id}")
     public R<FileResourceVO> getById(@PathVariable Long id) {
         return R.ok(fileResourceService.getById(id));
+    }
+
+    @Operation(summary = "查询文件元数据")
+    @GetMapping
+    public R<List<FileResourceVO>> list(@RequestParam(value = "bizType", required = false) String bizType) {
+        return R.ok(fileResourceService.list(bizType));
     }
 
     @Operation(summary = "下载文件")

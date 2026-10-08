@@ -1,5 +1,8 @@
 package com.campus.evaluation.evaluation.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
+
 import com.campus.evaluation.common.core.domain.R;
 import com.campus.evaluation.common.log.annotation.OperationLog;
 import com.campus.evaluation.evaluation.domain.dto.EvaluationQuestionSaveDTO;
@@ -16,6 +19,7 @@ import java.util.List;
 @Tag(name = "题目配置", description = "评价表单的题目管理")
 @RestController
 @RequestMapping("/evaluation/forms/{formId}/questions")
+@SaCheckRole(value = {"school_admin", "form_publisher"}, mode = SaMode.OR)
 @RequiredArgsConstructor
 public class EvaluationQuestionController {
 

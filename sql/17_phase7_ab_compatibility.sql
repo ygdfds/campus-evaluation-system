@@ -177,6 +177,82 @@ CALL add_index_if_missing(
   'KEY `idx_msg_notification_biz` (`tenant_id`,`biz_type`,`biz_id`,`deleted`)'
 );
 
+-- Older A/B databases store only school_code and school_name.
+-- Add fields required by the current school profile API.
+CALL add_column_if_missing(
+  'sch_school_profile', 'school_name',
+  'VARCHAR(180) NULL AFTER `tenant_id`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'name',
+  'VARCHAR(180) NULL AFTER `school_name`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'address',
+  'VARCHAR(255) NULL AFTER `name`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'website',
+  'VARCHAR(255) NULL AFTER `address`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'logo_file_id',
+  'BIGINT NULL AFTER `website`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'cover_file_id',
+  'BIGINT NULL AFTER `logo_file_id`'
+);
+CALL add_column_if_missing(
+  'sch_school_profile', 'intro',
+  'VARCHAR(2000) NULL AFTER `cover_file_id`'
+);
+UPDATE sch_school_profile
+SET name = COALESCE(NULLIF(name, ''), school_name),
+    school_name = COALESCE(NULLIF(school_name, ''), name)
+WHERE name IS NULL OR name = ''
+   OR school_name IS NULL OR school_name = '';
+
+-- Older platform databases store the tenant display name in tenant_name and
+-- do not have the plan relationship used by the current platform APIs.
+CALL add_column_if_missing(
+  'pf_tenant', 'plan_id',
+  'BIGINT NULL AFTER `tenant_code`'
+);
+CALL add_column_if_missing(
+  'pf_tenant', 'school_name',
+  'VARCHAR(160) NULL AFTER `tenant_code`'
+);
+CALL add_index_if_missing(
+  'pf_tenant',
+  'idx_pf_tenant_plan',
+  'KEY `idx_pf_tenant_plan` (`plan_id`)'
+);
+UPDATE pf_tenant t
+LEFT JOIN sch_school_profile sp ON sp.tenant_id = t.id AND sp.deleted = 0
+SET t.school_name = COALESCE(
+      NULLIF(t.school_name, ''),
+      NULLIF(sp.school_name, ''),
+      NULLIF(sp.name, ''),
+      t.tenant_name
+    )
+WHERE t.school_name IS NULL OR t.school_name = '';
+
+-- Older development databases used admin as the platform account name.
+-- Keep the login page account consistent and make the documented password work.
+UPDATE auth_user_account
+SET username = 'sys_admin',
+    password_hash = '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC'
+WHERE username = 'admin'
+  AND deleted = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT id FROM auth_user_account WHERE username = 'sys_admin' AND deleted = 0) existing_user
+  );
+UPDATE auth_user_account
+SET password_hash = '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC'
+WHERE username IN ('sys_admin', 'school_admin', 'teacher_li', 'student_zhang')
+  AND deleted = 0;
+
 DROP PROCEDURE IF EXISTS add_column_if_missing;
 DROP PROCEDURE IF EXISTS add_index_if_missing;
 DROP PROCEDURE IF EXISTS rename_column_if_needed;

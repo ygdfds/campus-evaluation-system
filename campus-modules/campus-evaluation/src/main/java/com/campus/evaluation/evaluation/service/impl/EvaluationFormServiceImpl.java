@@ -300,6 +300,47 @@ public class EvaluationFormServiceImpl implements EvaluationFormService {
         auditMapper.insert(audit);
     }
 
+    @Override
+    @Transactional
+    public void close(Long id) {
+        Long tenantId = requireTenantId();
+        EvaluationForm form = getFormByIdAndTenant(id, tenantId);
+        if (!"published".equals(form.getStatus())) {
+            throw new BusinessException("仅已发布表单可以关闭");
+        }
+        form.setStatus("closed");
+        formMapper.updateById(form);
+        EvaluationWindow window = windowMapper.selectOne(new LambdaQueryWrapper<EvaluationWindow>()
+                .eq(EvaluationWindow::getFormId, id)
+                .eq(EvaluationWindow::getTenantId, tenantId));
+        if (window != null) {
+            window.setStatus("closed");
+            windowMapper.updateById(window);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void withdrawAudit(Long id) {
+        Long tenantId = requireTenantId();
+        EvaluationForm form = getFormByIdAndTenant(id, tenantId);
+        if (!"pending".equals(form.getStatus())) {
+            throw new BusinessException("仅待审核表单可以撤回");
+        }
+        EvaluationFormPublishAudit audit = auditMapper.selectOne(new LambdaQueryWrapper<EvaluationFormPublishAudit>()
+                .eq(EvaluationFormPublishAudit::getFormId, id)
+                .eq(EvaluationFormPublishAudit::getTenantId, tenantId)
+                .eq(EvaluationFormPublishAudit::getStatus, "pending")
+                .orderByDesc(EvaluationFormPublishAudit::getRequestedAt)
+                .last("LIMIT 1"));
+        if (audit == null) {
+            throw new BusinessException("未找到待撤回的审核记录");
+        }
+        auditMapper.deleteById(audit.getId());
+        form.setStatus("draft");
+        formMapper.updateById(form);
+    }
+
     // ========== 辅助方法 ==========
 
     private EvaluationForm getFormByIdAndTenant(Long id, Long tenantId) {

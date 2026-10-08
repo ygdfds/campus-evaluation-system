@@ -45,6 +45,13 @@ public class PlatformManagementController {
     }
 
     @SaCheckRole("system_admin")
+    @PostMapping("/platform/tenants/{id}/admins")
+    public R<Map<String, Object>> createTenantAdmin(@PathVariable Long id,
+                                                      @RequestBody AdminUserDTO dto) {
+        return R.ok(service.createTenantAdmin(id, dto));
+    }
+
+    @SaCheckRole("system_admin")
     @PutMapping("/platform/tenants/{id}/status")
     @OperationLog(module = "platform", value = "租户状态变更", type = "UPDATE")
     public R<Void> tenantStatus(@PathVariable Long id, @RequestBody ChangeStatusDTO dto) {

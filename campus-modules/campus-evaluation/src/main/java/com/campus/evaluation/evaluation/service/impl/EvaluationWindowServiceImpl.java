@@ -64,6 +64,20 @@ public class EvaluationWindowServiceImpl implements EvaluationWindowService {
         windowMapper.insertOrUpdate(window);
     }
 
+    @Override
+    public void closeWindow(Long formId) {
+        Long tenantId = requireTenantId();
+        verifyFormAccess(formId, tenantId);
+        EvaluationWindow window = windowMapper.selectOne(new LambdaQueryWrapper<EvaluationWindow>()
+                .eq(EvaluationWindow::getFormId, formId)
+                .eq(EvaluationWindow::getTenantId, tenantId));
+        if (window == null) {
+            throw new BusinessException(404, "窗口未配置");
+        }
+        window.setStatus("closed");
+        windowMapper.updateById(window);
+    }
+
     private EvaluationForm verifyFormAccess(Long formId, Long tenantId) {
         EvaluationForm form = formMapper.selectOne(
                 new LambdaQueryWrapper<EvaluationForm>()

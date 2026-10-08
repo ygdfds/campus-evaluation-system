@@ -55,6 +55,10 @@
         <!-- 业务模块 -->
         <dependency>
             <groupId>com.campus.evaluation</groupId>
+            <artifactId>campus-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.campus.evaluation</groupId>
             <artifactId>campus-platform</artifactId>
         </dependency>
         <dependency>

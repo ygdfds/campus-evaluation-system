@@ -15,6 +15,7 @@
     <description>业务模块聚合</description>
 
     <modules>
+        <module>campus-ai</module>
         <module>campus-platform</module>
         <module>campus-auth</module>
         <module>campus-school</module>

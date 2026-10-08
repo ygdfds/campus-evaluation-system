@@ -3,6 +3,8 @@ package com.campus.evaluation.file.service;
 import com.campus.evaluation.file.domain.vo.FileResourceVO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * 文件资源服务接口
  */
@@ -24,6 +26,11 @@ public interface FileResourceService {
      * @return 文件资源 VO
      */
     FileResourceVO getById(Long id);
+
+    /**
+     * 查询当前租户的文件元数据。
+     */
+    List<FileResourceVO> list(String bizType);
 
     /**
      * 下载文件（返回字节流）

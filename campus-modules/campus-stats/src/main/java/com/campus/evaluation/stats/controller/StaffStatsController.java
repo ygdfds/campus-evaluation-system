@@ -43,6 +43,12 @@ public class StaffStatsController {
         return R.ok(staffStatsService.pendingFeedback());
     }
 
+    @GetMapping("/dashboard/pending-appeals")
+    public R<List<Map<String, Object>>> pendingAppeals() {
+        requireStaffAccess();
+        return R.ok(staffStatsService.pendingAppeals());
+    }
+
     @GetMapping("/dashboard/evaluation-summary")
     public R<Map<String, Object>> evaluationSummary() {
         requireStaffAccess();

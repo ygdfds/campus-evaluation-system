@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campus.evaluation.common.core.exception.BusinessException;
 import com.campus.evaluation.common.security.SecurityUtils;
 import com.campus.evaluation.message.domain.entity.Notification;
+import com.campus.evaluation.message.domain.entity.StaffNotificationPreference;
 import com.campus.evaluation.message.mapper.NotificationMapper;
+import com.campus.evaluation.message.mapper.StaffNotificationPreferenceMapper;
 import com.campus.evaluation.message.service.NotificationService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +27,64 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationMapper notificationMapper;
     private final ObjectMapper objectMapper;
+    private final StaffNotificationPreferenceMapper preferenceMapper;
+
+    @Override
+    public Map<String, Object> getStaffPreference() {
+        StaffNotificationPreference preference = preference();
+        return preferenceMap(preference);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateStaffPreference(Map<String, Object> payload) {
+        StaffNotificationPreference preference = preference();
+        setBooleanIfPresent(payload, "feedback_notice", preference::setFeedbackNotice);
+        setBooleanIfPresent(payload, "evaluation_notice", preference::setEvaluationNotice);
+        setBooleanIfPresent(payload, "appeal_notice", preference::setAppealNotice);
+        setBooleanIfPresent(payload, "report_warning_notice", preference::setReportWarningNotice);
+        setBooleanIfPresent(payload, "system_notice", preference::setSystemNotice);
+        preferenceMapper.updateById(preference);
+        return preferenceMap(preference);
+    }
+
+    private StaffNotificationPreference preference() {
+        Long tenantId = requireTenantId();
+        Long userId = SecurityUtils.getUserId();
+        StaffNotificationPreference preference = preferenceMapper.selectOne(new LambdaQueryWrapper<StaffNotificationPreference>()
+                .eq(StaffNotificationPreference::getTenantId, tenantId)
+                .eq(StaffNotificationPreference::getUserId, userId));
+        if (preference != null) return preference;
+        preference = new StaffNotificationPreference();
+        preference.setTenantId(tenantId);
+        preference.setSchoolId(SecurityUtils.getSchoolId());
+        preference.setUserId(userId);
+        preference.setFeedbackNotice(true);
+        preference.setEvaluationNotice(true);
+        preference.setAppealNotice(true);
+        preference.setReportWarningNotice(true);
+        preference.setSystemNotice(true);
+        preferenceMapper.insert(preference);
+        return preference;
+    }
+
+    private Map<String, Object> preferenceMap(StaffNotificationPreference preference) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("feedback_notice", preference.getFeedbackNotice());
+        map.put("evaluation_notice", preference.getEvaluationNotice());
+        map.put("appeal_notice", preference.getAppealNotice());
+        map.put("report_warning_notice", preference.getReportWarningNotice());
+        map.put("system_notice", preference.getSystemNotice());
+        return map;
+    }
+
+    private void setBooleanIfPresent(Map<String, Object> payload, String key,
+                                     java.util.function.Consumer<Boolean> setter) {
+        if (payload.containsKey(key)) {
+            Object value = payload.get(key);
+            setter.accept(value instanceof Boolean bool ? bool : Boolean.valueOf(String.valueOf(value)));
+        }
+    }
 
     @Override
     public List<Map<String, Object>> list(Map<String, Object> params) {

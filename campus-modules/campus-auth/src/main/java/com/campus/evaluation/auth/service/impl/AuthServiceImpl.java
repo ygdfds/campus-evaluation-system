@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -133,6 +135,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public CurrentUserVO getCurrentUser() {
         LoginUser loginUser = requireLoginUser();
+        AuthUserAccount account = userAccountMapper.selectById(loginUser.getUserId());
         return CurrentUserVO.builder()
                 .userId(loginUser.getUserId())
                 .username(loginUser.getUsername())
@@ -142,6 +145,13 @@ public class AuthServiceImpl implements AuthService {
                 .tenantId(loginUser.getTenantId())
                 .schoolId(loginUser.getSchoolId())
                 .avatarUrl(loginUser.getAvatarUrl())
+                .avatarFileId(account != null ? account.getAvatarFileId() : null)
+                .phone(account != null ? account.getPhone() : null)
+                .email(account != null ? account.getEmail() : null)
+                .status(account != null ? account.getStatus() : null)
+                .createdAt(account != null ? account.getCreatedAt() : null)
+                .updatedAt(account != null ? account.getUpdatedAt() : null)
+                .lastLoginAt(account != null ? account.getLastLoginAt() : null)
                 .roles(loginUser.getRoles())
                 .permissions(loginUser.getPermissions())
                 .mustChangePassword(loginUser.getMustChangePassword())
@@ -185,6 +195,88 @@ public class AuthServiceImpl implements AuthService {
 
         loginUser.setMustChangePassword(false);
         StpUtil.getSession().set(SecurityUtils.LOGIN_USER_KEY, loginUser);
+    }
+
+    @Override
+    public Map<String, Object> updateCurrentUser(Map<String, Object> payload) {
+        LoginUser loginUser = requireLoginUser();
+        AuthUserAccount account = userAccountMapper.selectById(loginUser.getUserId());
+        AuthPersonProfile profile = personProfileMapper.selectOne(new LambdaQueryWrapper<AuthPersonProfile>()
+                .eq(AuthPersonProfile::getUserId, loginUser.getUserId())
+                .eq(AuthPersonProfile::getTenantId, loginUser.getTenantId()));
+        if (account == null || profile == null) {
+            throw new BusinessException(404, "User profile not found", "USER_PROFILE_NOT_FOUND");
+        }
+        if (payload.containsKey("phone")) {
+            String phone = payload.get("phone") == null ? null : String.valueOf(payload.get("phone")).trim();
+            if (phone != null && !phone.isBlank() && userAccountMapper.existsByPhone(phone, account.getId()) > 0) {
+                throw new BusinessException(409, "Phone number is already in use", "PHONE_DUPLICATE");
+            }
+            account.setPhone(phone);
+        }
+        if (payload.containsKey("email")) {
+            account.setEmail(payload.get("email") == null ? null : String.valueOf(payload.get("email")).trim());
+        }
+        if (payload.containsKey("avatarFileId")) {
+            account.setAvatarFileId(asLong(payload.get("avatarFileId")));
+            profile.setAvatarFileId(account.getAvatarFileId());
+        }
+        if (payload.containsKey("officePhone")) {
+            profile.setOfficePhone(asString(payload.get("officePhone")));
+        }
+        if (payload.containsKey("intro")) {
+            profile.setIntro(asString(payload.get("intro")));
+        }
+        account.setUpdatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now());
+        userAccountMapper.updateById(account);
+        personProfileMapper.updateById(profile);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("userId", account.getId());
+        result.put("username", account.getUsername());
+        result.put("phone", account.getPhone());
+        result.put("email", account.getEmail());
+        result.put("avatarFileId", account.getAvatarFileId());
+        result.put("officePhone", profile.getOfficePhone());
+        result.put("intro", profile.getIntro());
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getLoginLogs() {
+        LoginUser loginUser = requireLoginUser();
+        return loginLogMapper.selectList(new LambdaQueryWrapper<AuthLoginLog>()
+                        .eq(AuthLoginLog::getTenantId, loginUser.getTenantId())
+                        .eq(AuthLoginLog::getUserId, loginUser.getUserId())
+                        .orderByDesc(AuthLoginLog::getCreatedAt)
+                        .last("LIMIT 20"))
+                .stream()
+                .map(log -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("id", log.getId());
+                    item.put("user_id", log.getUserId());
+                    item.put("tenant_id", log.getTenantId());
+                    item.put("ip", log.getIp());
+                    item.put("device", log.getDevice());
+                    item.put("location", log.getLocation());
+                    item.put("result", log.getResult());
+                    item.put("created_at", log.getCreatedAt());
+                    return item;
+                })
+                .toList();
+    }
+
+    private static String asString(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private static Long asLong(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return null;
+        try {
+            return value instanceof Number number ? number.longValue() : Long.valueOf(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            throw new BusinessException(400, "Invalid numeric value");
+        }
     }
 
     private LoginUser buildLoginUser(

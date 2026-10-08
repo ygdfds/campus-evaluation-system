@@ -13,10 +13,10 @@ INSERT IGNORE INTO sch_school_profile (id, tenant_id, name, address, website, lo
 (1, 1, '清华大学', '北京市海淀区清华园', 'https://www.tsinghua.edu.cn', NULL, NULL, '校园服务质量在线评测系统演示学校。', 'active', NOW(), NOW(), 0);
 
 INSERT IGNORE INTO auth_user_account (id, tenant_id, username, password_hash, phone, email, status, must_change_password, created_at, updated_at, deleted) VALUES
-(1, NULL, 'sys_admin', '$2a$10$uY1sYwVp3vN4lN1xXwqG4e1K3Zb9pHndWjG0rW44E1oNk7V1qV9hS', '13000000000', 'sysadmin@example.com', 'active', 0, NOW(), NOW(), 0),
-(101, 1, 'school_admin', '$2a$10$uY1sYwVp3vN4lN1xXwqG4e1K3Zb9pHndWjG0rW44E1oNk7V1qV9hS', '13100000000', 'schooladmin@example.com', 'active', 0, NOW(), NOW(), 0),
-(102, 1, 'teacher_li', '$2a$10$uY1sYwVp3vN4lN1xXwqG4e1K3Zb9pHndWjG0rW44E1oNk7V1qV9hS', '13200000000', 'teacherli@example.com', 'active', 0, NOW(), NOW(), 0),
-(103, 1, 'student_zhang', '$2a$10$uY1sYwVp3vN4lN1xXwqG4e1K3Zb9pHndWjG0rW44E1oNk7V1qV9hS', '13300000000', 'studentzhang@example.com', 'active', 0, NOW(), NOW(), 0);
+(1, NULL, 'sys_admin', '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC', '13000000000', 'sysadmin@example.com', 'active', 0, NOW(), NOW(), 0),
+(101, 1, 'school_admin', '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC', '13100000000', 'schooladmin@example.com', 'active', 0, NOW(), NOW(), 0),
+(102, 1, 'teacher_li', '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC', '13200000000', 'teacherli@example.com', 'active', 0, NOW(), NOW(), 0),
+(103, 1, 'student_zhang', '$2a$10$PXxu6z9DxReO10.4dmoefuNk9WLlHPbUBOTfRenGYKvLg.CDoWLEC', '13300000000', 'studentzhang@example.com', 'active', 0, NOW(), NOW(), 0);
 
 INSERT IGNORE INTO auth_person_profile (id, tenant_id, user_id, real_name, role_type, no_work, no_student, gender, office_phone, intro, org_unit_id, department_name, class_name, created_at, updated_at, deleted) VALUES
 (1, NULL, 1, '系统管理员', 'system_admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NOW(), NOW(), 0),

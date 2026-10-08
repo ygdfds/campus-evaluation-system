@@ -35,4 +35,5 @@ public class NotificationController {
                                           @RequestBody Map<String, Object> payload) {
         return R.ok(notificationService.update(id, payload));
     }
+
 }

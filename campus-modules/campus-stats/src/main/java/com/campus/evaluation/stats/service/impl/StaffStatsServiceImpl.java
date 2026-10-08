@@ -115,11 +115,15 @@ public class StaffStatsServiceImpl implements StaffStatsService {
                 SELECT COUNT(*) FROM eval_window
                 WHERE tenant_id = ? AND status IN ('open','active') AND deleted = 0
                 """, tenantId);
+        long pendingAppeals = queryCount("""
+                SELECT COUNT(*) FROM rv_appeal_request
+                WHERE tenant_id = ? AND status IN ('pending','processing') AND deleted = 0
+                """, tenantId);
         Map<String, Object> data = new HashMap<>();
         data.put("pendingForms", pendingForms);
         data.put("pendingFeedback", pendingFeedback);
         data.put("activeWindows", activeWindows);
-        data.put("pendingAppeals", 0);
+        data.put("pendingAppeals", pendingAppeals);
         return data;
     }
 
@@ -176,6 +180,19 @@ public class StaffStatsServiceImpl implements StaffStatsService {
                 WHERE c.tenant_id = ? AND c.status IN ('pending','processing') AND c.deleted = 0
                 GROUP BY c.id, si.name, so.name, co.course_name, tu.name
                 ORDER BY c.updated_at DESC
+                LIMIT 5
+                """, tenantId);
+    }
+
+    @Override
+    public List<Map<String, Object>> pendingAppeals() {
+        Long tenantId = requireTenantId();
+        return queryList("""
+                SELECT id, appeal_no, submission_id, form_id, target_type, target_id,
+                       appeal_type, reason, status, priority, submitted_at, updated_at
+                FROM rv_appeal_request
+                WHERE tenant_id = ? AND status IN ('pending','processing') AND deleted = 0
+                ORDER BY updated_at DESC
                 LIMIT 5
                 """, tenantId);
     }

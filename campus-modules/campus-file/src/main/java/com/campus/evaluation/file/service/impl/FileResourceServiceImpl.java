@@ -79,6 +79,21 @@ public class FileResourceServiceImpl implements FileResourceService {
     }
 
     @Override
+    public List<FileResourceVO> list(String bizType) {
+        Long tenantId = SecurityUtils.getTenantId();
+        if (tenantId == null) {
+            throw new BusinessException(403, "无法获取租户信息");
+        }
+        LambdaQueryWrapper<FileResource> wrapper = new LambdaQueryWrapper<FileResource>()
+                .eq(FileResource::getTenantId, tenantId)
+                .orderByDesc(FileResource::getCreatedAt);
+        if (bizType != null && !bizType.isBlank()) {
+            wrapper.eq(FileResource::getBizType, bizType);
+        }
+        return fileResourceMapper.selectList(wrapper).stream().map(this::toVO).toList();
+    }
+
+    @Override
     public byte[] download(Long id) {
         FileResource entity = getEntityById(id);
         checkAccess(entity);

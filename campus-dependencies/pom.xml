@@ -160,6 +160,11 @@
             </dependency>
             <dependency>
                 <groupId>com.campus.evaluation</groupId>
+                <artifactId>campus-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.campus.evaluation</groupId>
                 <artifactId>campus-platform</artifactId>
                 <version>${project.version}</version>
             </dependency>

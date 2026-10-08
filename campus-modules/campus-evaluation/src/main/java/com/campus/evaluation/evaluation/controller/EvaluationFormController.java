@@ -1,5 +1,8 @@
 package com.campus.evaluation.evaluation.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
+
 import com.campus.evaluation.common.core.domain.PageResult;
 import com.campus.evaluation.common.core.domain.R;
 import com.campus.evaluation.common.log.annotation.OperationLog;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "评价表单管理", description = "评价表单的 CRUD、复制、提交审核")
 @RestController
 @RequestMapping("/evaluation/forms")
+@SaCheckRole(value = {"school_admin", "form_publisher"}, mode = SaMode.OR)
 @RequiredArgsConstructor
 public class EvaluationFormController {
 
@@ -59,6 +63,7 @@ public class EvaluationFormController {
 
     @Operation(summary = "删除表单")
     @OperationLog(module = "evaluation", value = "删除评价表单", type = "DELETE")
+    @SaCheckRole("school_admin")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         formService.delete(id);
@@ -77,6 +82,22 @@ public class EvaluationFormController {
     @PostMapping("/{id}/submit-audit")
     public R<Void> submitAudit(@PathVariable Long id) {
         formService.submitAudit(id);
+        return R.ok();
+    }
+
+    @Operation(summary = "关闭表单")
+    @OperationLog(module = "evaluation", value = "关闭评价表单", type = "UPDATE")
+    @PostMapping("/{id}/close")
+    public R<Void> close(@PathVariable Long id) {
+        formService.close(id);
+        return R.ok();
+    }
+
+    @Operation(summary = "撤回审核")
+    @OperationLog(module = "evaluation", value = "撤回评价表单审核", type = "UPDATE")
+    @PostMapping("/{id}/withdraw-audit")
+    public R<Void> withdrawAudit(@PathVariable Long id) {
+        formService.withdrawAudit(id);
         return R.ok();
     }
 }

@@ -60,7 +60,10 @@ public class SchoolProfileServiceImpl implements SchoolProfileService {
         validateImageFile(dto.getLogoFileId(), profile.getLogoFileId(), tenantId, profile.getId());
         validateImageFile(dto.getCoverFileId(), profile.getCoverFileId(), tenantId, profile.getId());
 
-        if (dto.getName() != null) profile.setName(dto.getName());
+        if (dto.getName() != null) {
+            profile.setName(dto.getName());
+            profile.setSchoolName(dto.getName());
+        }
         if (dto.getAddress() != null) profile.setAddress(dto.getAddress());
         if (dto.getWebsite() != null) profile.setWebsite(dto.getWebsite());
         if (dto.getLogoFileId() != null) profile.setLogoFileId(dto.getLogoFileId());
@@ -75,7 +78,7 @@ public class SchoolProfileServiceImpl implements SchoolProfileService {
         return SchoolProfileVO.builder()
                 .id(p.getId())
                 .tenantId(p.getTenantId())
-                .schoolName(p.getName())
+                .schoolName(p.getName() != null ? p.getName() : p.getSchoolName())
                 .address(p.getAddress())
                 .website(p.getWebsite())
                 .logoFileId(p.getLogoFileId())

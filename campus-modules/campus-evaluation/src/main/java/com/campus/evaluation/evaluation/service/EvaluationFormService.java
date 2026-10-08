@@ -23,4 +23,8 @@ public interface EvaluationFormService {
     EvaluationFormListVO copy(Long id);
 
     void submitAudit(Long id);
+
+    void close(Long id);
+
+    void withdrawAudit(Long id);
 }

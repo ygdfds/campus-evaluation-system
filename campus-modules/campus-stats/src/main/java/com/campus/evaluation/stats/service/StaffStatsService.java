@@ -13,5 +13,7 @@ public interface StaffStatsService {
 
     List<Map<String, Object>> pendingFeedback();
 
+    List<Map<String, Object>> pendingAppeals();
+
     Map<String, Object> evaluationSummary();
 }
