@@ -6,6 +6,7 @@ USE campus_evaluation_system;
 DROP PROCEDURE IF EXISTS add_column_if_missing;
 DROP PROCEDURE IF EXISTS add_index_if_missing;
 DROP PROCEDURE IF EXISTS rename_column_if_needed;
+DROP PROCEDURE IF EXISTS migrate_legacy_complaint_records;
 
 DELIMITER $$
 
@@ -81,6 +82,32 @@ BEGIN
   END IF;
 END$$
 
+CREATE PROCEDURE migrate_legacy_complaint_records()
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+      AND table_name = 'cmp_process_record'
+  ) THEN
+    INSERT INTO cmp_complaint_process_record
+      (tenant_id, school_id, complaint_id, handler_id, from_status, to_status,
+       content, created_at, deleted)
+    SELECT old.tenant_id, complaint.school_id, old.complaint_id, old.handler_id,
+           old.from_status, old.to_status, old.content, old.created_at, old.deleted
+    FROM cmp_process_record old
+    LEFT JOIN cmp_complaint complaint ON complaint.id = old.complaint_id
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM cmp_complaint_process_record current_record
+      WHERE current_record.tenant_id = old.tenant_id
+        AND current_record.complaint_id = old.complaint_id
+        AND current_record.created_at = old.created_at
+        AND COALESCE(current_record.handler_id, 0) = COALESCE(old.handler_id, 0)
+    );
+  END IF;
+END$$
+
 DELIMITER ;
 
 CALL add_column_if_missing(
@@ -120,21 +147,7 @@ CALL add_column_if_missing(
   'TINYINT(1) NOT NULL DEFAULT 0 AFTER `created_at`'
 );
 
-INSERT INTO cmp_complaint_process_record
-  (tenant_id, school_id, complaint_id, handler_id, from_status, to_status,
-   content, created_at, deleted)
-SELECT old.tenant_id, complaint.school_id, old.complaint_id, old.handler_id,
-       old.from_status, old.to_status, old.content, old.created_at, old.deleted
-FROM cmp_process_record old
-LEFT JOIN cmp_complaint complaint ON complaint.id = old.complaint_id
-WHERE NOT EXISTS (
-  SELECT 1
-  FROM cmp_complaint_process_record current_record
-  WHERE current_record.tenant_id = old.tenant_id
-    AND current_record.complaint_id = old.complaint_id
-    AND current_record.created_at = old.created_at
-    AND COALESCE(current_record.handler_id, 0) = COALESCE(old.handler_id, 0)
-);
+CALL migrate_legacy_complaint_records();
 
 CALL rename_column_if_needed(
   'msg_notification', 'business_type', 'biz_type', 'VARCHAR(64) NULL'
@@ -167,3 +180,4 @@ CALL add_index_if_missing(
 DROP PROCEDURE IF EXISTS add_column_if_missing;
 DROP PROCEDURE IF EXISTS add_index_if_missing;
 DROP PROCEDURE IF EXISTS rename_column_if_needed;
+DROP PROCEDURE IF EXISTS migrate_legacy_complaint_records;
