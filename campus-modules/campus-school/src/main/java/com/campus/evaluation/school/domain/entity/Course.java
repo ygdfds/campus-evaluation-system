@@ -37,6 +37,8 @@ public class Course implements Serializable {
 
     private LocalDateTime endAt;
 
+    private String status;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

@@ -3,6 +3,7 @@ package com.campus.evaluation.auth.service.impl;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.campus.evaluation.auth.domain.dto.ChangePasswordDTO;
 import com.campus.evaluation.auth.domain.dto.LoginRequest;
 import com.campus.evaluation.auth.domain.entity.AuthLoginLog;
 import com.campus.evaluation.auth.domain.entity.AuthPermission;
@@ -26,18 +27,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-/**
- * 认证授权服务实现
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    private static final String ROLE_SYSTEM_ADMIN = "system_admin";
+    private static final String ROLE_SCHOOL_ADMIN = "school_admin";
+    private static final String ROLE_STAFF = "staff";
+    private static final String ROLE_STUDENT = "student";
 
     private final AuthUserAccountMapper userAccountMapper;
     private final AuthRoleMapper roleMapper;
@@ -53,115 +58,66 @@ public class AuthServiceImpl implements AuthService {
         String ip = getClientIp(httpRequest);
         String device = httpRequest.getHeader("User-Agent");
 
-        // 1. 查询用户账号
         AuthUserAccount account = userAccountMapper.selectOne(
                 new LambdaQueryWrapper<AuthUserAccount>()
                         .eq(AuthUserAccount::getUsername, username)
+                        .eq(AuthUserAccount::getDeleted, 0)
         );
 
         if (account == null) {
-            // 用户不存在，记录失败日志（userId=0 表示未知用户）
             saveLoginLog(null, null, ip, device, "fail");
-            throw new BusinessException(400, "账号或密码错误");
+            throw invalidCredentials();
         }
-
-        // 2. 校验账号状态
         if (!"active".equals(account.getStatus())) {
             saveLoginLog(account.getId(), account.getTenantId(), ip, device, "fail");
-            throw new BusinessException(400, "账号或密码错误");
+            throw new BusinessException(422, "Account is disabled or locked", "USER_DISABLED");
         }
-
-        // 3. 校验租户状态（平台账号 tenantId 为 NULL 时跳过）
-        Long tenantId = account.getTenantId();
-        Long schoolId = null;
-        if (tenantId != null) {
-            int tenantCount = userAccountMapper.countActiveTenant(tenantId);
-            if (tenantCount == 0) {
-                saveLoginLog(account.getId(), tenantId, ip, device, "fail");
-                throw new BusinessException(400, "账号或密码错误");
-            }
-            schoolId = userAccountMapper.selectSchoolIdByTenantId(tenantId);
-        }
-
-        // 4. BCrypt 密码校验
         if (!passwordEncoder.matches(password, account.getPasswordHash())) {
-            saveLoginLog(account.getId(), tenantId, ip, device, "fail");
-            throw new BusinessException(400, "账号或密码错误");
+            saveLoginLog(account.getId(), account.getTenantId(), ip, device, "fail");
+            throw invalidCredentials();
         }
 
-        // 5. 查询角色和权限
         List<AuthRole> roles = roleMapper.selectRolesByUserId(account.getId());
         List<AuthPermission> permissions = permissionMapper.selectPermissionsByUserId(account.getId());
+        List<String> roleCodes = roles.stream().map(AuthRole::getRoleCode).collect(Collectors.toList());
+        List<String> permissionCodes = permissions.stream().map(AuthPermission::getPermissionCode).collect(Collectors.toList());
 
-        List<String> roleCodes = roles.stream()
-                .map(AuthRole::getRoleCode)
-                .collect(Collectors.toList());
-        List<String> permissionCodes = permissions.stream()
-                .map(AuthPermission::getPermissionCode)
-                .collect(Collectors.toList());
-
-        // 6. 查询人员档案获取 realName 和 userType
-        String realName = null;
-        String userType = null;
         AuthPersonProfile profile = personProfileMapper.selectOne(
                 new LambdaQueryWrapper<AuthPersonProfile>()
                         .eq(AuthPersonProfile::getUserId, account.getId())
+                        .eq(AuthPersonProfile::getDeleted, 0)
         );
-        if (profile != null) {
-            realName = profile.getRealName();
-            userType = profile.getRoleType();
-        }
+        String roleType = resolveRoleType(profile, roleCodes);
+        Scope scope = resolveScope(account, roleType);
 
-        // 7. 构建 LoginUser 并存入 Sa-Token Session
-        long expiresIn = StpUtil.getTokenTimeout();
-
-        LoginUser loginUser = new LoginUser();
-        loginUser.setUserId(account.getId());
-        loginUser.setUsername(account.getUsername());
-        loginUser.setRealName(realName);
-        loginUser.setUserType(userType);
-        loginUser.setTenantId(tenantId);
-        loginUser.setSchoolId(schoolId);
-        loginUser.setAvatarUrl(null); // 头像 URL 暂不查询 file_resource
-        loginUser.setRoles(roleCodes);
-        loginUser.setPermissions(permissionCodes);
-        loginUser.setExpiresIn(expiresIn);
-        loginUser.setMustChangePassword(account.getMustChangePassword());
-
-        // 8. Sa-Token 登录
+        LoginUser loginUser = buildLoginUser(account, profile, roleType, scope, roleCodes, permissionCodes);
         SaLoginModel loginModel = new SaLoginModel()
-                .setIsLastingCookie(request.getRememberMe() != null && request.getRememberMe());
+                .setIsLastingCookie(Boolean.TRUE.equals(request.getRememberMe()));
         StpUtil.login(account.getId(), loginModel);
+        loginUser.setExpiresIn(StpUtil.getTokenTimeout());
         StpUtil.getSession().set(SecurityUtils.LOGIN_USER_KEY, loginUser);
 
-        // 获取实际 token 信息
-        String token = StpUtil.getTokenValue();
-        String tokenName = StpUtil.getTokenName();
-        long actualExpiresIn = StpUtil.getTokenTimeout();
-        loginUser.setExpiresIn(actualExpiresIn);
-
-        // 9. 更新最后登录时间
         account.setLastLoginAt(LocalDateTime.now());
         userAccountMapper.updateById(account);
+        saveLoginLog(account.getId(), account.getTenantId(), ip, device, "success");
 
-        // 10. 记录成功登录日志
-        saveLoginLog(account.getId(), tenantId, ip, device, "success");
-
-        log.info("用户登录成功: username={}, userId={}, tenantId={}", username, account.getId(), tenantId);
+        log.info("User login success: username={}, userId={}, tenantId={}, roleType={}",
+                username, account.getId(), scope.tenantId(), roleType);
 
         return LoginResponse.builder()
-                .tokenName(tokenName)
-                .token(token)
-                .expiresIn(actualExpiresIn)
+                .tokenName(StpUtil.getTokenName())
+                .token(StpUtil.getTokenValue())
+                .expiresIn(loginUser.getExpiresIn())
                 .userId(account.getId())
                 .username(account.getUsername())
-                .realName(realName)
-                .userType(userType)
-                .tenantId(tenantId)
-                .schoolId(schoolId)
+                .realName(loginUser.getRealName())
+                .userType(roleType)
+                .roleType(roleType)
+                .tenantId(scope.tenantId())
+                .schoolId(scope.schoolId())
                 .roles(roleCodes)
                 .permissions(permissionCodes)
-                .avatarUrl(null)
+                .avatarUrl(loginUser.getAvatarUrl())
                 .build();
     }
 
@@ -170,22 +126,19 @@ public class AuthServiceImpl implements AuthService {
         if (StpUtil.isLogin()) {
             String username = SecurityUtils.getUsername();
             StpUtil.logout();
-            log.info("用户登出: username={}", username);
+            log.info("User logout: username={}", username);
         }
     }
 
     @Override
     public CurrentUserVO getCurrentUser() {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null) {
-            throw new BusinessException(401, "未登录或登录已过期");
-        }
-
+        LoginUser loginUser = requireLoginUser();
         return CurrentUserVO.builder()
                 .userId(loginUser.getUserId())
                 .username(loginUser.getUsername())
                 .realName(loginUser.getRealName())
                 .userType(loginUser.getUserType())
+                .roleType(loginUser.getRoleType() != null ? loginUser.getRoleType() : loginUser.getUserType())
                 .tenantId(loginUser.getTenantId())
                 .schoolId(loginUser.getSchoolId())
                 .avatarUrl(loginUser.getAvatarUrl())
@@ -197,22 +150,107 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public PermissionVO getPermissions() {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null) {
-            throw new BusinessException(401, "未登录或登录已过期");
-        }
-
+        LoginUser loginUser = requireLoginUser();
         return PermissionVO.builder()
                 .roles(loginUser.getRoles())
                 .permissions(loginUser.getPermissions())
                 .build();
     }
 
-    // ==================== 私有方法 ====================
+    @Override
+    public void changePassword(ChangePasswordDTO request) {
+        LoginUser loginUser = requireLoginUser();
+        if (!Objects.equals(request.getNewPassword(), request.getConfirmPassword())) {
+            throw new BusinessException(422, "Password confirmation does not match", "PASSWORD_CONFIRM_MISMATCH");
+        }
+        if (Objects.equals(request.getOldPassword(), request.getNewPassword())) {
+            throw new BusinessException(422, "New password must be different from the old password", "PASSWORD_REUSED");
+        }
 
-    /**
-     * 保存登录日志
-     */
+        AuthUserAccount account = userAccountMapper.selectById(loginUser.getUserId());
+        if (account == null || Objects.equals(account.getDeleted(), 1)) {
+            throw new BusinessException(401, "Login expired", "UNAUTHORIZED");
+        }
+        if (!"active".equals(account.getStatus())) {
+            StpUtil.logout();
+            throw new BusinessException(422, "Account is disabled or locked", "USER_DISABLED");
+        }
+        if (!passwordEncoder.matches(request.getOldPassword(), account.getPasswordHash())) {
+            throw new BusinessException(400, "Old password is incorrect", "OLD_PASSWORD_INVALID");
+        }
+
+        account.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        account.setMustChangePassword(false);
+        userAccountMapper.updateById(account);
+
+        loginUser.setMustChangePassword(false);
+        StpUtil.getSession().set(SecurityUtils.LOGIN_USER_KEY, loginUser);
+    }
+
+    private LoginUser buildLoginUser(
+            AuthUserAccount account,
+            AuthPersonProfile profile,
+            String roleType,
+            Scope scope,
+            List<String> roleCodes,
+            List<String> permissionCodes
+    ) {
+        LoginUser loginUser = new LoginUser();
+        loginUser.setUserId(account.getId());
+        loginUser.setUsername(account.getUsername());
+        loginUser.setRealName(profile != null ? profile.getRealName() : null);
+        loginUser.setUserType(roleType);
+        loginUser.setRoleType(roleType);
+        loginUser.setTenantId(scope.tenantId());
+        loginUser.setSchoolId(scope.schoolId());
+        loginUser.setAvatarUrl(null);
+        loginUser.setRoles(roleCodes);
+        loginUser.setPermissions(permissionCodes);
+        loginUser.setMustChangePassword(account.getMustChangePassword());
+        return loginUser;
+    }
+
+    private String resolveRoleType(AuthPersonProfile profile, List<String> roleCodes) {
+        if (profile != null && StringUtils.hasText(profile.getRoleType())) {
+            return profile.getRoleType();
+        }
+        if (roleCodes.contains(ROLE_SYSTEM_ADMIN)) return ROLE_SYSTEM_ADMIN;
+        if (roleCodes.contains(ROLE_SCHOOL_ADMIN)) return ROLE_SCHOOL_ADMIN;
+        if (roleCodes.contains(ROLE_STAFF)) return ROLE_STAFF;
+        if (roleCodes.contains(ROLE_STUDENT)) return ROLE_STUDENT;
+        throw new BusinessException(403, "Account has no supported role", "ACCOUNT_ROLE_INVALID");
+    }
+
+    private Scope resolveScope(AuthUserAccount account, String roleType) {
+        Long tenantId = account.getTenantId();
+        if (ROLE_SYSTEM_ADMIN.equals(roleType)) {
+            return new Scope(tenantId, tenantId != null ? userAccountMapper.selectSchoolIdByTenantId(tenantId) : null);
+        }
+        if (tenantId == null) {
+            throw new BusinessException(403, "Account is not bound to a tenant", "ACCOUNT_SCOPE_INVALID");
+        }
+        if (userAccountMapper.countActiveTenant(tenantId) == 0) {
+            throw new BusinessException(403, "Tenant is disabled or unavailable", "TENANT_DISABLED");
+        }
+        Long schoolId = userAccountMapper.selectSchoolIdByTenantId(tenantId);
+        if (schoolId == null) {
+            throw new BusinessException(403, "Account is not bound to a school profile", "ACCOUNT_SCOPE_INVALID");
+        }
+        return new Scope(tenantId, schoolId);
+    }
+
+    private LoginUser requireLoginUser() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null) {
+            throw new BusinessException(401, "Login required or expired", "UNAUTHORIZED");
+        }
+        return loginUser;
+    }
+
+    private BusinessException invalidCredentials() {
+        return new BusinessException(400, "Invalid username or password", "INVALID_CREDENTIALS");
+    }
+
     private void saveLoginLog(Long userId, Long tenantId, String ip, String device, String result) {
         try {
             AuthLoginLog loginLog = new AuthLoginLog();
@@ -224,25 +262,24 @@ public class AuthServiceImpl implements AuthService {
             loginLog.setCreatedAt(LocalDateTime.now());
             loginLogMapper.insert(loginLog);
         } catch (Exception e) {
-            log.error("写入登录日志失败", e);
+            log.error("Failed to write login log", e);
         }
     }
 
-    /**
-     * 获取客户端 IP
-     */
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        // X-Forwarded-For 可能包含多个 IP，取第一个
         if (ip != null && ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    private record Scope(Long tenantId, Long schoolId) {
     }
 }

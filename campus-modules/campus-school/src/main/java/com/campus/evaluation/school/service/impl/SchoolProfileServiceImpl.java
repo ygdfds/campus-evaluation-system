@@ -33,6 +33,13 @@ public class SchoolProfileServiceImpl implements SchoolProfileService {
         return toVO(profile);
     }
 
+    private void validateImageFile(Long requestedId, Long currentId, Long tenantId, Long schoolId) {
+        if (requestedId == null || requestedId.equals(currentId)) return;
+        if (schoolProfileMapper.countOwnedImage(requestedId, tenantId, schoolId) == 0) {
+            throw new BusinessException(400, "Image must be uploaded to the current school first");
+        }
+    }
+
     @Override
     public SchoolProfileVO updateCurrentProfile(SchoolProfileUpdateDTO dto) {
         Long tenantId = SecurityUtils.getTenantId();
@@ -46,6 +53,12 @@ public class SchoolProfileServiceImpl implements SchoolProfileService {
         if (profile == null) {
             throw new BusinessException(404, "学校资料不存在");
         }
+
+        if (!"active".equals(profile.getStatus())) {
+            throw new BusinessException(409, "School profile is not active");
+        }
+        validateImageFile(dto.getLogoFileId(), profile.getLogoFileId(), tenantId, profile.getId());
+        validateImageFile(dto.getCoverFileId(), profile.getCoverFileId(), tenantId, profile.getId());
 
         if (dto.getName() != null) profile.setName(dto.getName());
         if (dto.getAddress() != null) profile.setAddress(dto.getAddress());

@@ -7,10 +7,12 @@ import com.campus.evaluation.common.core.exception.BusinessException;
 import com.campus.evaluation.common.security.SecurityUtils;
 import com.campus.evaluation.school.domain.dto.ClassGroupDTO;
 import com.campus.evaluation.school.domain.entity.ClassGroup;
+import com.campus.evaluation.school.domain.entity.CourseEnrollment;
 import com.campus.evaluation.school.domain.entity.TeachingOrgUnit;
 import com.campus.evaluation.school.domain.vo.ClassGroupVO;
 import com.campus.evaluation.school.domain.vo.OptionVO;
 import com.campus.evaluation.school.mapper.ClassGroupMapper;
+import com.campus.evaluation.school.mapper.CourseEnrollmentMapper;
 import com.campus.evaluation.school.mapper.TeachingOrgMapper;
 import com.campus.evaluation.school.service.ClassGroupService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class ClassGroupServiceImpl implements ClassGroupService {
 
     private final ClassGroupMapper classGroupMapper;
     private final TeachingOrgMapper teachingOrgMapper;
+    private final CourseEnrollmentMapper courseEnrollmentMapper;
 
     @Override
     public PageResult<ClassGroupVO> list(String keyword, Long teachingOrgId, String grade, String status, int pageNum, int pageSize) {
@@ -73,6 +76,11 @@ public class ClassGroupServiceImpl implements ClassGroupService {
     public void delete(Long id) {
         Long tenantId = requireTenantId();
         getByIdAndTenant(id, tenantId);
+        long enrollmentCount = courseEnrollmentMapper.selectCount(
+                new LambdaQueryWrapper<CourseEnrollment>()
+                        .eq(CourseEnrollment::getClassGroupId, id)
+                        .eq(CourseEnrollment::getTenantId, tenantId));
+        if (enrollmentCount > 0) throw new BusinessException(409, "Class has enrollment records");
         classGroupMapper.deleteById(id);
     }
 

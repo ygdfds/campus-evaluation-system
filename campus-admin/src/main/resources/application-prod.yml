@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:3000}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:5s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+
+logging:
+  level:
+    com.campus.evaluation: ${APP_LOG_LEVEL:INFO}
+    org.springframework.web: WARN
+
+campus:
+  storage:
+    local-path: ${CAMPUS_STORAGE_LOCAL_PATH:/var/lib/campus-evaluation/uploads}
+  security:
+    default-password: ${CAMPUS_DEFAULT_PASSWORD}

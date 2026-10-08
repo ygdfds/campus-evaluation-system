@@ -19,6 +19,7 @@ public class CourseVO {
     private String term;
     private LocalDateTime startAt;
     private LocalDateTime endAt;
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

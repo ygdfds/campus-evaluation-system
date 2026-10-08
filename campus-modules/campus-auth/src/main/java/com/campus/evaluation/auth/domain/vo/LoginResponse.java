@@ -26,6 +26,8 @@ public class LoginResponse {
 
     private String userType;
 
+    private String roleType;
+
     private Long tenantId;
 
     private Long schoolId;

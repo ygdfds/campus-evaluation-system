@@ -33,9 +33,11 @@ public class SchoolStaffUserController {
             @RequestParam(required = false) Long teachingOrgId,
             @RequestParam(required = false) Long serviceOrgId,
             @RequestParam(required = false) String roleCode,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return R.ok(staffUserService.list(keyword, status, teachingOrgId, serviceOrgId, roleCode, pageNum, pageSize));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        int currentPage = page != null ? page : (pageNum != null ? pageNum : 1);
+        return R.ok(staffUserService.list(keyword, status, teachingOrgId, serviceOrgId, roleCode, currentPage, pageSize));
     }
 
     @Operation(summary = "查看教职工详情")

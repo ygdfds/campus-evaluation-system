@@ -1,32 +1,32 @@
-# ==========================================
-# 开发环境配置
-# ==========================================
-
+# Local development defaults. Override values with environment variables
+# or a backend-root .env file before using a shared database.
 spring:
-  # MySQL 数据源
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # TODO: 请修改为实际的数据库地址、用户名和密码
-    url: jdbc:mysql://localhost:3306/campus_evaluation_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
-
-  # Redis 配置
+    url: ${DB_URL:jdbc:mysql://localhost:3306/campus_evaluation_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
   data:
     redis:
-      host: localhost
-      port: 6379
-      # password: 无密码
-      database: 0
-      timeout: 5000ms
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:5s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
+          max-active: ${REDIS_POOL_MAX_ACTIVE:8}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:0}
 
-# 开发环境日志级别
 logging:
   level:
-    com.campus.evaluation: DEBUG
+    com.campus.evaluation: ${APP_LOG_LEVEL:DEBUG}
     org.springframework.web: INFO
+
+campus:
+  storage:
+    local-path: ${CAMPUS_STORAGE_LOCAL_PATH:./uploads}
+  security:
+    default-password: ${CAMPUS_DEFAULT_PASSWORD:123456}

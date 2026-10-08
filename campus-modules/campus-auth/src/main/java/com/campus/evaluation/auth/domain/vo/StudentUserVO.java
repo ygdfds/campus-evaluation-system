@@ -24,6 +24,8 @@ public class StudentUserVO {
     @Schema(description = "用户类型")
     private String userType;
 
+    private String roleType;
+
     @Schema(description = "手机号")
     private String phone;
 

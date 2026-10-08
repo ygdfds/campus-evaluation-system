@@ -30,9 +30,11 @@ public class EvaluationFormController {
             @RequestParam(required = false) String formType,
             @RequestParam(required = false) String targetType,
             @RequestParam(required = false) Long creatorId,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return R.ok(formService.list(keyword, status, formType, targetType, creatorId, pageNum, pageSize));
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        int currentPage = page != null ? page : (pageNum != null ? pageNum : 1);
+        return R.ok(formService.list(keyword, status, formType, targetType, creatorId, currentPage, pageSize));
     }
 
     @Operation(summary = "查看表单详情")

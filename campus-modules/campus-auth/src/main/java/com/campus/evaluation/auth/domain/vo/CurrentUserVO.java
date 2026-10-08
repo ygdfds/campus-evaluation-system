@@ -20,6 +20,8 @@ public class CurrentUserVO {
 
     private String userType;
 
+    private String roleType;
+
     private Long tenantId;
 
     private Long schoolId;
