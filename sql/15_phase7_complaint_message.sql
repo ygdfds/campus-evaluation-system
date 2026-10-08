@@ -1,0 +1,91 @@
+USE campus_evaluation_system;
+
+CREATE TABLE IF NOT EXISTS cmp_complaint (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  tenant_id BIGINT NOT NULL COMMENT '租户ID',
+  school_id BIGINT NULL COMMENT '学校ID',
+  submitter_id BIGINT NOT NULL COMMENT '提交人用户ID',
+  complaint_type VARCHAR(32) NOT NULL COMMENT 'complaint/suggestion/inquiry/praise',
+  target_type VARCHAR(32) NOT NULL COMMENT 'teaching/logistics/other',
+  target_id VARCHAR(64) NULL COMMENT '前端选择的目标ID',
+  course_id BIGINT NULL COMMENT '课程ID',
+  teaching_org_id BIGINT NULL COMMENT '教学组织ID',
+  service_item_id BIGINT NULL COMMENT '服务项目ID',
+  service_org_id BIGINT NULL COMMENT '服务组织ID',
+  title VARCHAR(120) NOT NULL COMMENT '标题',
+  content TEXT NOT NULL COMMENT '内容',
+  status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending/processing/resolved/rejected/cancelled',
+  priority VARCHAR(32) NOT NULL DEFAULT 'normal' COMMENT 'low/normal/high',
+  anonymous_to_handler TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否对处理人匿名',
+  attachment_file_ids JSON NULL COMMENT '附件文件ID数组',
+  cancelled_at DATETIME NULL COMMENT '撤销时间',
+  cancel_reason VARCHAR(300) NULL COMMENT '撤销原因',
+  resolved_at DATETIME NULL COMMENT '办结时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_cmp_complaint_submitter (tenant_id, submitter_id, deleted),
+  KEY idx_cmp_complaint_status (tenant_id, status, deleted),
+  KEY idx_cmp_complaint_target (tenant_id, target_type, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='投诉建议记录';
+
+CREATE TABLE IF NOT EXISTS cmp_process_record (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  tenant_id BIGINT NOT NULL COMMENT '租户ID',
+  complaint_id BIGINT NOT NULL COMMENT '投诉建议ID',
+  handler_id BIGINT NULL COMMENT '处理人用户ID',
+  from_status VARCHAR(32) NULL COMMENT '原状态',
+  to_status VARCHAR(32) NOT NULL COMMENT '目标状态',
+  content VARCHAR(1000) NULL COMMENT '处理说明',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_cmp_process_complaint (tenant_id, complaint_id, deleted),
+  KEY idx_cmp_process_handler (tenant_id, handler_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='投诉建议处理记录';
+
+CREATE TABLE IF NOT EXISTS cmp_feedback_work_order (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  tenant_id BIGINT NOT NULL COMMENT '租户ID',
+  school_id BIGINT NULL COMMENT '学校ID',
+  submitter_id BIGINT NOT NULL COMMENT '提交人用户ID',
+  source VARCHAR(32) NOT NULL COMMENT '来源类型',
+  source_id BIGINT NOT NULL COMMENT '来源ID',
+  status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending/processing/resolved/rejected/cancelled',
+  priority VARCHAR(32) NOT NULL DEFAULT 'normal' COMMENT 'low/normal/high',
+  handler_org_id BIGINT NULL COMMENT '处理组织ID',
+  assignee_id BIGINT NULL COMMENT '处理人用户ID',
+  completed_at DATETIME NULL COMMENT '完成时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_cmp_work_order_source (tenant_id, source, source_id, deleted),
+  KEY idx_cmp_work_order_status (tenant_id, status, deleted),
+  KEY idx_cmp_work_order_assignee (tenant_id, assignee_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='反馈处理工单';
+
+CREATE TABLE IF NOT EXISTS msg_notification (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  tenant_id BIGINT NOT NULL COMMENT '租户ID',
+  school_id BIGINT NULL COMMENT '学校ID',
+  receiver_user_id BIGINT NULL COMMENT '接收人用户ID',
+  target_roles VARCHAR(300) NULL COMMENT '目标角色编码，逗号分隔',
+  type VARCHAR(32) NOT NULL DEFAULT 'system' COMMENT 'system/evaluation/complaint/account/announcement/todo/business',
+  business_type VARCHAR(64) NULL COMMENT '业务类型',
+  title VARCHAR(160) NOT NULL COMMENT '标题',
+  content TEXT NULL COMMENT '内容',
+  priority VARCHAR(32) NOT NULL DEFAULT 'normal' COMMENT 'normal/important/urgent',
+  read_status VARCHAR(32) NOT NULL DEFAULT 'unread' COMMENT 'unread/read',
+  link VARCHAR(300) NULL COMMENT '跳转链接',
+  biz_id BIGINT NULL COMMENT '业务ID',
+  read_at DATETIME NULL COMMENT '阅读时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_msg_notification_receiver (tenant_id, receiver_user_id, read_status, deleted),
+  KEY idx_msg_notification_type (tenant_id, type, deleted),
+  KEY idx_msg_notification_biz (tenant_id, business_type, biz_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息通知';

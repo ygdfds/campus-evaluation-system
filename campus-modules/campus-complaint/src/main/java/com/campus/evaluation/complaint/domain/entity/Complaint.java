@@ -1,0 +1,52 @@
+package com.campus.evaluation.complaint.domain.entity;
+
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@Data
+@TableName("cmp_complaint")
+public class Complaint implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private Long tenantId;
+    private Long schoolId;
+    private Long submitterId;
+    private String complaintType;
+    private String targetType;
+    private String targetId;
+    private Long courseId;
+    private Long teachingOrgId;
+    private Long serviceItemId;
+    private Long serviceOrgId;
+    private String title;
+    private String content;
+    private String status;
+    private String priority;
+    private Boolean anonymousToHandler;
+    private String attachmentFileIds;
+    private LocalDateTime cancelledAt;
+    private String cancelReason;
+    private LocalDateTime resolvedAt;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
+
+    @TableLogic
+    private Integer deleted;
+}
