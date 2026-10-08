@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("cmp_process_record")
+@TableName("cmp_complaint_process_record")
 public class ComplaintProcessRecord implements Serializable {
 
     @Serial
@@ -22,6 +22,7 @@ public class ComplaintProcessRecord implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long tenantId;
+    private Long schoolId;
     private Long complaintId;
     private Long handlerId;
     private String fromStatus;

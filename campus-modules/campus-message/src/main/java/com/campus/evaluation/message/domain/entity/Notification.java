@@ -23,9 +23,11 @@ public class Notification implements Serializable {
     private Long id;
     private Long tenantId;
     private Long schoolId;
+    private Long senderUserId;
     private Long receiverUserId;
     private String targetRoles;
     private String type;
+    @TableField("biz_type")
     private String businessType;
     private String title;
     private String content;
@@ -34,6 +36,11 @@ public class Notification implements Serializable {
     private String link;
     private Long bizId;
     private LocalDateTime readAt;
+    private String tag;
+    private Long coverFileId;
+    private LocalDateTime publishTime;
+    private String status;
+    private String noticeType;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

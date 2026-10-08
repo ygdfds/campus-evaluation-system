@@ -6,12 +6,15 @@ import com.campus.evaluation.common.security.SecurityUtils;
 import com.campus.evaluation.message.domain.entity.Notification;
 import com.campus.evaluation.message.mapper.NotificationMapper;
 import com.campus.evaluation.message.service.NotificationService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,7 @@ import java.util.Map;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationMapper notificationMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<Map<String, Object>> list(Map<String, Object> params) {
@@ -67,7 +71,8 @@ public class NotificationServiceImpl implements NotificationService {
         entity.setTenantId(requireTenantId());
         entity.setSchoolId(SecurityUtils.getSchoolId());
         entity.setReceiverUserId(asLong(payload.get("receiver_user_id")));
-        entity.setTargetRoles(asString(payload.get("target_roles")));
+        entity.setSenderUserId(asLong(payload.get("sender_user_id")));
+        entity.setTargetRoles(toStoredRoles(payload.get("target_roles")));
         entity.setType(defaultValue(payload, "type", "system"));
         entity.setBusinessType(firstNonBlank(asString(payload.get("business_type")), asString(payload.get("biz_type"))));
         entity.setTitle(required(payload, "title"));
@@ -77,6 +82,11 @@ public class NotificationServiceImpl implements NotificationService {
         entity.setLink(asString(payload.get("link")));
         entity.setBizId(asLong(payload.get("biz_id")));
         entity.setReadAt(asDateTime(payload.get("read_at")));
+        entity.setTag(asString(payload.get("tag")));
+        entity.setCoverFileId(asLong(payload.get("cover_file_id")));
+        entity.setPublishTime(asDateTime(payload.get("publish_time")));
+        entity.setStatus(defaultValue(payload, "status", "published"));
+        entity.setNoticeType(asString(payload.get("notice_type")));
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setDeleted(0);
@@ -113,7 +123,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .eq(Notification::getId, id)
                 .eq(Notification::getTenantId, requireTenantId()));
         if (entity == null) {
-            throw new BusinessException(404, "通知不存在");
+            throw new BusinessException(404, "Notification not found");
         }
         if (!belongsToCurrentUser(entity, SecurityUtils.getUserId())) {
             throw new BusinessException(403, "无权访问该通知");
@@ -129,8 +139,7 @@ public class NotificationServiceImpl implements NotificationService {
             return true;
         }
         List<String> currentRoles = SecurityUtils.getRoles();
-        return Arrays.stream(entity.getTargetRoles().split(","))
-                .map(String::trim)
+        return readRoles(entity.getTargetRoles()).stream()
                 .anyMatch(currentRoles::contains);
     }
 
@@ -139,8 +148,9 @@ public class NotificationServiceImpl implements NotificationService {
         map.put("id", entity.getId());
         map.put("tenant_id", entity.getTenantId());
         map.put("school_id", entity.getSchoolId());
+        map.put("sender_user_id", entity.getSenderUserId());
         map.put("receiver_user_id", entity.getReceiverUserId());
-        map.put("target_roles", entity.getTargetRoles());
+        map.put("target_roles", String.join(",", readRoles(entity.getTargetRoles())));
         map.put("type", entity.getType());
         map.put("business_type", entity.getBusinessType());
         map.put("biz_type", entity.getBusinessType());
@@ -151,6 +161,11 @@ public class NotificationServiceImpl implements NotificationService {
         map.put("link", entity.getLink());
         map.put("biz_id", entity.getBizId());
         map.put("read_at", entity.getReadAt());
+        map.put("tag", entity.getTag());
+        map.put("cover_file_id", entity.getCoverFileId());
+        map.put("publish_time", entity.getPublishTime());
+        map.put("status", entity.getStatus());
+        map.put("notice_type", entity.getNoticeType());
         map.put("created_at", entity.getCreatedAt());
         map.put("updated_at", entity.getUpdatedAt());
         map.put("deleted", entity.getDeleted());
@@ -215,6 +230,52 @@ public class NotificationServiceImpl implements NotificationService {
             return LocalDateTime.parse(String.valueOf(value).replace("Z", ""));
         } catch (Exception ignored) {
             return null;
+        }
+    }
+
+    private String toStoredRoles(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof List<?> list) {
+            try {
+                return objectMapper.writeValueAsString(list);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isBlank()) {
+            return null;
+        }
+        try {
+            List<String> roles = objectMapper.readValue(text, new TypeReference<>() {});
+            return objectMapper.writeValueAsString(roles);
+        } catch (Exception ignored) {
+            try {
+                return objectMapper.writeValueAsString(
+                        Arrays.stream(text.split(","))
+                                .map(String::trim)
+                                .filter(role -> !role.isBlank())
+                                .toList()
+                );
+            } catch (Exception ignoredAgain) {
+                return null;
+            }
+        }
+    }
+
+    private List<String> readRoles(String value) {
+        if (value == null || value.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(value, new TypeReference<>() {});
+        } catch (Exception ignored) {
+            return Arrays.stream(value.split(","))
+                    .map(String::trim)
+                    .filter(role -> !role.isBlank())
+                    .toList();
         }
     }
 }

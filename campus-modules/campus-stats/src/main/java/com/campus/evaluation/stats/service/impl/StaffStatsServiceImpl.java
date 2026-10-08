@@ -70,7 +70,7 @@ public class StaffStatsServiceImpl implements StaffStatsService {
         data.put("records", queryList("""
                 SELECT id, tenant_id, complaint_id, handler_id, from_status, to_status,
                        content, created_at, deleted
-                FROM cmp_process_record WHERE tenant_id = ? AND deleted = 0
+                FROM cmp_complaint_process_record WHERE tenant_id = ? AND deleted = 0
                 """, tenantId));
         data.put("courses", queryList("""
                 SELECT id, tenant_id, school_id, teaching_org_id, course_code, course_name,
@@ -168,7 +168,7 @@ public class StaffStatsServiceImpl implements StaffStatsService {
                        COALESCE(MAX(r.created_at), c.updated_at) AS latest_process_time,
                        CASE WHEN c.anonymous_to_handler = 1 THEN '匿名' ELSE '学生用户' END AS submitter_label
                 FROM cmp_complaint c
-                LEFT JOIN cmp_process_record r ON r.complaint_id = c.id AND r.deleted = 0
+                LEFT JOIN cmp_complaint_process_record r ON r.complaint_id = c.id AND r.deleted = 0
                 LEFT JOIN sch_service_item si ON si.id = c.service_item_id AND si.deleted = 0
                 LEFT JOIN sch_service_org_unit so ON so.id = c.service_org_id AND so.deleted = 0
                 LEFT JOIN sch_course co ON co.id = c.course_id AND co.deleted = 0

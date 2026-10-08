@@ -33,6 +33,9 @@ public class EvaluationSubmission implements Serializable {
 
     private Long evaluatorUserId;
 
+    @TableField("evaluator_hash")
+    private String evaluatorHash;
+
     private String targetType;
 
     private Long targetId;

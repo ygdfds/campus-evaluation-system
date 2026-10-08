@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -293,10 +295,26 @@ public class StudentEvaluationServiceImpl implements StudentEvaluationService {
         submission.setFormId(form.getId());
         submission.setWindowId(window.getId());
         submission.setEvaluatorUserId(userId);
+        submission.setEvaluatorHash(evaluatorHash(tenantId, userId));
         submission.setTargetType(target.targetType());
         submission.setTargetId(target.targetId());
         submission.setAnonymous(Boolean.TRUE.equals(form.getAnonymous()));
         return submission;
+    }
+
+    private String evaluatorHash(Long tenantId, Long userId) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(("campus-evaluation:" + tenantId + ":" + userId)
+                            .getBytes(StandardCharsets.UTF_8));
+            StringBuilder result = new StringBuilder(digest.length * 2);
+            for (byte value : digest) {
+                result.append(String.format("%02x", value));
+            }
+            return result.toString();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to create evaluator hash", ex);
+        }
     }
 
     private void replaceDetailRows(Long tenantId, Long schoolId, Long submissionId,
