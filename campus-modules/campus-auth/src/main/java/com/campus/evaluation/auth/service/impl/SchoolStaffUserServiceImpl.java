@@ -42,6 +42,13 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
     private static final Set<String> STAFF_ALLOWED_ROLES = Set.of(
             "staff", "teaching_admin", "service_admin", "feedback_handler", "form_publisher"
     );
+    private static final java.util.Map<String, String> STAFF_ROLE_NAMES = java.util.Map.of(
+            "staff", "Staff",
+            "teaching_admin", "Teaching Administrator",
+            "service_admin", "Service Administrator",
+            "feedback_handler", "Feedback Handler",
+            "form_publisher", "Form Publisher"
+    );
     private static final Set<String> STAFF_FORBIDDEN_ROLES = Set.of(
             "system_admin", "school_admin", "student"
     );
@@ -211,7 +218,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
         for (String code : roleCodes) {
             AuthRole role = roleMapper.selectRoleByCodeAndTenant(code, tenantId);
             if (role == null) {
-                throw new BusinessException(500, "角色不存在: " + code);
+                role = createTenantRole(tenantId, code);
             }
             AuthUserRole userRole = new AuthUserRole();
             userRole.setTenantId(tenantId);
@@ -255,6 +262,12 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
         profile.setServiceOrgId(dto.getServiceOrgId());
         profile.setAvatarFileId(dto.getAvatarFileId());
         personProfileMapper.updateById(profile);
+
+        if (dto.getRoleCodes() != null && !dto.getRoleCodes().isEmpty()) {
+            AssignRolesDTO rolesDTO = new AssignRolesDTO();
+            rolesDTO.setRoleCodes(dto.getRoleCodes());
+            assignRoles(id, rolesDTO);
+        }
 
         return toStaffVO(account, profile);
     }
@@ -315,7 +328,7 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
         for (String code : newRoles) {
             AuthRole role = roleMapper.selectRoleByCodeAndTenant(code, tenantId);
             if (role == null) {
-                throw new BusinessException(500, "角色不存在: " + code);
+                role = createTenantRole(tenantId, code);
             }
             AuthUserRole userRole = new AuthUserRole();
             userRole.setTenantId(tenantId);
@@ -326,6 +339,19 @@ public class SchoolStaffUserServiceImpl implements SchoolStaffUserService {
     }
 
     // ==================== 私有方法 ====================
+
+    private AuthRole createTenantRole(Long tenantId, String code) {
+        if (!STAFF_ALLOWED_ROLES.contains(code)) {
+            throw new BusinessException(400, "Invalid role: " + code);
+        }
+        AuthRole role = new AuthRole();
+        role.setTenantId(tenantId);
+        role.setRoleCode(code);
+        role.setRoleName(STAFF_ROLE_NAMES.getOrDefault(code, code));
+        role.setScopeType("staff".equals(code) ? "tenant" : "org");
+        roleMapper.insert(role);
+        return role;
+    }
 
     private StaffUserVO toStaffVO(AuthUserAccount acc, AuthPersonProfile profile) {
         List<AuthRole> roles = roleMapper.selectRolesByUserId(acc.getId());

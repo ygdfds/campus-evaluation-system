@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Schema(description = "编辑教职工DTO")
 public class StaffUserUpdateDTO {
@@ -31,4 +33,6 @@ public class StaffUserUpdateDTO {
 
     @Schema(description = "头像文件ID")
     private Long avatarFileId;
+
+    private List<String> roleCodes;
 }
