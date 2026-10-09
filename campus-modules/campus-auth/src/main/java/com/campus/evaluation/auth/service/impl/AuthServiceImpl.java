@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -81,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
 
         List<AuthRole> roles = roleMapper.selectRolesByUserId(account.getId());
         List<AuthPermission> permissions = permissionMapper.selectPermissionsByUserId(account.getId());
-        List<String> roleCodes = roles.stream().map(AuthRole::getRoleCode).collect(Collectors.toList());
+        List<String> roleCodes = new ArrayList<>(roles.stream().map(AuthRole::getRoleCode).collect(Collectors.toList()));
         List<String> permissionCodes = permissions.stream().map(AuthPermission::getPermissionCode).collect(Collectors.toList());
 
         AuthPersonProfile profile = personProfileMapper.selectOne(
@@ -90,6 +91,9 @@ public class AuthServiceImpl implements AuthService {
                         .eq(AuthPersonProfile::getDeleted, 0)
         );
         String roleType = resolveRoleType(profile, roleCodes);
+        if (!roleCodes.contains(roleType)) {
+            roleCodes.add(roleType);
+        }
         Scope scope = resolveScope(account, roleType);
 
         LoginUser loginUser = buildLoginUser(account, profile, roleType, scope, roleCodes, permissionCodes);

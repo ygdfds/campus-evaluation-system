@@ -284,6 +284,27 @@ public class EvaluationFormServiceImpl implements EvaluationFormService {
         }
 
         // 更新表单状态
+        if (SecurityUtils.hasRole("school_admin")) {
+            EvaluationFormPublishAudit audit = new EvaluationFormPublishAudit();
+            audit.setTenantId(tenantId);
+            audit.setSchoolId(SecurityUtils.getSchoolId());
+            audit.setFormId(id);
+            audit.setAction("publish");
+            audit.setStatus("approved");
+            audit.setRequestedBy(SecurityUtils.getUserId());
+            audit.setRequestedAt(LocalDateTime.now());
+            audit.setReviewedBy(SecurityUtils.getUserId());
+            audit.setReviewedAt(LocalDateTime.now());
+            audit.setSubmitterRole("school_admin");
+            auditMapper.insert(audit);
+
+            form.setStatus("published");
+            form.setPublishedAt(LocalDateTime.now());
+            formMapper.updateById(form);
+            refreshWindowStatus(form);
+            return;
+        }
+
         form.setStatus("pending");
         formMapper.updateById(form);
 
@@ -298,6 +319,22 @@ public class EvaluationFormServiceImpl implements EvaluationFormService {
         audit.setRequestedAt(LocalDateTime.now());
         audit.setSubmitterRole(SecurityUtils.getRoles().stream().findFirst().orElse(""));
         auditMapper.insert(audit);
+    }
+
+    private void refreshWindowStatus(EvaluationForm form) {
+        EvaluationWindow window = windowMapper.selectOne(new LambdaQueryWrapper<EvaluationWindow>()
+                .eq(EvaluationWindow::getFormId, form.getId())
+                .eq(EvaluationWindow::getTenantId, form.getTenantId()));
+        if (window == null) return;
+        LocalDateTime now = LocalDateTime.now();
+        if (window.getStartAt() != null && now.isBefore(window.getStartAt())) {
+            window.setStatus("scheduled");
+        } else if (window.getEndAt() != null && now.isAfter(window.getEndAt())) {
+            window.setStatus("ended");
+        } else {
+            window.setStatus("active");
+        }
+        windowMapper.updateById(window);
     }
 
     @Override

@@ -103,10 +103,11 @@ public class StaffStatsServiceImpl implements StaffStatsService {
     @Override
     public Map<String, Object> todoStats() {
         Long tenantId = requireTenantId();
+        Long userId = SecurityUtils.getUserId();
         long pendingForms = queryCount("""
-                SELECT COUNT(*) FROM eval_form_publish_audit
-                WHERE tenant_id = ? AND status = 'pending' AND deleted = 0
-                """, tenantId);
+                SELECT COUNT(*) FROM eval_form
+                WHERE tenant_id = ? AND publisher_id = ? AND status IN ('draft','rejected') AND deleted = 0
+                """, tenantId, userId);
         long pendingFeedback = queryCount("""
                 SELECT COUNT(*) FROM cmp_complaint
                 WHERE tenant_id = ? AND status IN ('pending','processing') AND deleted = 0

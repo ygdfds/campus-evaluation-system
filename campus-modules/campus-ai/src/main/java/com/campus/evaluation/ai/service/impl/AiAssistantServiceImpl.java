@@ -38,6 +38,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     private static final int MAX_DOCUMENTS = 8;
     private static final int MAX_CONTEXT_CHARS = 12000;
+    private static final double MIN_RELEVANCE_SCORE = 0.42D;
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
@@ -246,6 +247,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return documents.stream()
                 .sorted(Comparator.comparingDouble((KnowledgeDocument document) -> scores.getOrDefault(document.id(), 0D))
                         .reversed())
+                .filter(document -> scores.getOrDefault(document.id(), 0D) >= MIN_RELEVANCE_SCORE)
                 .limit(MAX_DOCUMENTS)
                 .toList();
     }
@@ -462,12 +464,28 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     private record SetTokens(List<String> values) {
         private static SetTokens of(String value) {
-            return new SetTokens(Arrays.stream(value.toLowerCase(Locale.ROOT)
-                            .split("[^\\p{L}\\p{N}]+"))
-                    .map(String::trim)
-                    .filter(token -> token.length() > 1)
-                    .distinct()
-                    .toList());
+            String normalized = value == null ? "" : value.toLowerCase(Locale.ROOT);
+            List<String> tokens = new ArrayList<>();
+            StringBuilder word = new StringBuilder();
+            normalized.codePoints().forEach(codePoint -> {
+                if (Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HAN) {
+                    flushWord(tokens, word);
+                    tokens.add(new String(Character.toChars(codePoint)));
+                } else if (Character.isLetterOrDigit(codePoint)) {
+                    word.appendCodePoint(codePoint);
+                } else {
+                    flushWord(tokens, word);
+                }
+            });
+            flushWord(tokens, word);
+            return new SetTokens(tokens.stream().distinct().toList());
+        }
+
+        private static void flushWord(List<String> tokens, StringBuilder word) {
+            if (word.length() > 1) {
+                tokens.add(word.toString());
+            }
+            word.setLength(0);
         }
     }
 }

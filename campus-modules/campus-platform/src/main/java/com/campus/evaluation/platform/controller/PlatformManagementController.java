@@ -126,6 +126,18 @@ public class PlatformManagementController {
     }
 
     @SaCheckRole("system_admin")
+    @GetMapping("/platform/settings")
+    public R<Map<String, Object>> settings() {
+        return R.ok(service.settings());
+    }
+
+    @SaCheckRole("system_admin")
+    @PutMapping("/platform/settings")
+    public R<Map<String, Object>> saveSettings(@RequestBody Map<String, Object> payload) {
+        return R.ok(service.saveSettings(payload));
+    }
+
+    @SaCheckRole("system_admin")
     @GetMapping("/platform/permissions")
     public R<List<Map<String, Object>>> permissions() {
         return R.ok(service.permissions());

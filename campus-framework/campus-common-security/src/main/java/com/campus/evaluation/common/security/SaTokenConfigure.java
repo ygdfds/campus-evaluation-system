@@ -22,7 +22,10 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             "/favicon.ico",
             "/auth/login",
             "/auth/captcha",
-    };
+            "/auth/schools",
+            "/auth/verify-identity",
+            "/auth/forgot-password",
+            };
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

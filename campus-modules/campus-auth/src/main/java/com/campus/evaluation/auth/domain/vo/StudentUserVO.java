@@ -65,6 +65,9 @@ public class StudentUserVO {
     @Schema(description = "教学组织名称")
     private String teachingOrgName;
 
+    @Schema(description = "教学组织ID")
+    private Long teachingOrgId;
+
     @Schema(description = "创建时间")
     private LocalDateTime createdAt;
 

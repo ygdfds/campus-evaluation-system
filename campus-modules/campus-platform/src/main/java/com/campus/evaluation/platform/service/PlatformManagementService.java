@@ -357,6 +357,31 @@ public class PlatformManagementService {
         return mapOf("capability", capability, "enabled", true, "status", "available", "value", value);
     }
 
+    public Map<String, Object> settings() {
+        Map<String, Object> values = defaultSettings();
+        jdbc.queryForList("SELECT setting_key AS settingKey, setting_value AS settingValue FROM pf_system_setting WHERE deleted = 0")
+                .forEach(row -> values.put(String.valueOf(row.get("settingKey")), parseSettingValue(row.get("settingValue"))));
+        return values;
+    }
+
+    @Transactional
+    public Map<String, Object> saveSettings(Map<String, Object> payload) {
+        if (payload == null) {
+            payload = Map.of();
+        }
+        Map<String, Object> allowed = defaultSettings();
+        for (String key : allowed.keySet()) {
+            Object value = payload.containsKey(key) ? payload.get(key) : allowed.get(key);
+            jdbc.update("""
+                    INSERT INTO pf_system_setting (setting_key, setting_value, updated_by, updated_at, deleted)
+                    VALUES (?, ?, ?, NOW(), 0)
+                    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by),
+                                            updated_at = NOW(), deleted = 0
+                    """, key, String.valueOf(value), currentUserId());
+        }
+        return settings();
+    }
+
     public List<Map<String, Object>> permissions() {
         return jdbc.queryForList("""
                 SELECT id, permission_code AS permissionCode, permission_name AS permissionName,
@@ -789,6 +814,30 @@ public class PlatformManagementService {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             return new LinkedHashMap<>();
+        }
+    }
+
+    private Map<String, Object> defaultSettings() {
+        Map<String, Object> defaults = new LinkedHashMap<>();
+        defaults.put("onboardingNotificationTemplate", "您的学校入驻申请已提交，请等待平台审核。");
+        defaults.put("expirationWarningTemplate", "您的套餐即将到期，请及时联系平台管理员续费。");
+        defaults.put("sensitiveWords", "");
+        defaults.put("extremeLowScoreThreshold", 2);
+        defaults.put("manualReviewEnabled", true);
+        defaults.put("maxFileSize", 50);
+        defaults.put("attachmentExpiryDays", 180);
+        return defaults;
+    }
+
+    private Object parseSettingValue(Object raw) {
+        String value = raw == null ? "" : String.valueOf(raw);
+        if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+            return Boolean.parseBoolean(value);
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ignored) {
+            return value;
         }
     }
 

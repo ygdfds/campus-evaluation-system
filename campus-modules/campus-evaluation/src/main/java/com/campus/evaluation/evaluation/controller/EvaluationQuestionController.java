@@ -19,7 +19,7 @@ import java.util.List;
 @Tag(name = "题目配置", description = "评价表单的题目管理")
 @RestController
 @RequestMapping("/evaluation/forms/{formId}/questions")
-@SaCheckRole(value = {"school_admin", "form_publisher"}, mode = SaMode.OR)
+@SaCheckRole(value = {"school_admin", "form_publisher", "teaching_admin", "service_admin"}, mode = SaMode.OR)
 @RequiredArgsConstructor
 public class EvaluationQuestionController {
 

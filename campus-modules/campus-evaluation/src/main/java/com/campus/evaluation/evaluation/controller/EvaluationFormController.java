@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "评价表单管理", description = "评价表单的 CRUD、复制、提交审核")
 @RestController
 @RequestMapping("/evaluation/forms")
-@SaCheckRole(value = {"school_admin", "form_publisher"}, mode = SaMode.OR)
+@SaCheckRole(value = {"school_admin", "form_publisher", "teaching_admin", "service_admin"}, mode = SaMode.OR)
 @RequiredArgsConstructor
 public class EvaluationFormController {
 

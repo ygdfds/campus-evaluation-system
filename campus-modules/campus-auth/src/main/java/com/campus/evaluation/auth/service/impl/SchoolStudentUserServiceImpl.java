@@ -121,6 +121,8 @@ public class SchoolStudentUserServiceImpl implements SchoolStudentUserService {
                         ? userAccountMapper.selectClassName(profile.getClassId()) : null)
                 .grade(profile.getClassId() != null
                         ? userAccountMapper.selectClassGrade(profile.getClassId()) : null)
+                .teachingOrgId(profile.getClassId() != null
+                        ? userAccountMapper.selectClassTeachingOrgId(profile.getClassId()) : null)
                 .teachingOrgName(profile.getClassId() != null ? resolveClassTeachingOrgName(profile.getClassId()) : null)
                 .mustChangePassword(account.getMustChangePassword())
                 .lastLoginAt(account.getLastLoginAt())
@@ -273,6 +275,7 @@ public class SchoolStudentUserServiceImpl implements SchoolStudentUserService {
                 .classId(classId)
                 .className(classId != null ? userAccountMapper.selectClassName(classId) : null)
                 .grade(classId != null ? userAccountMapper.selectClassGrade(classId) : null)
+                .teachingOrgId(classId != null ? userAccountMapper.selectClassTeachingOrgId(classId) : null)
                 .teachingOrgName(classId != null ? resolveClassTeachingOrgName(classId) : null)
                 .createdAt(acc.getCreatedAt()).updatedAt(acc.getUpdatedAt())
                 .build();

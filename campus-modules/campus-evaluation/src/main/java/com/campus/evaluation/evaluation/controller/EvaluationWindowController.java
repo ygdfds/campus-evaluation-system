@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "评价窗口", description = "评价表单的窗口配置")
 @RestController
 @RequestMapping("/evaluation/forms/{formId}/window")
-@SaCheckRole(value = {"school_admin", "form_publisher"}, mode = SaMode.OR)
+@SaCheckRole(value = {"school_admin", "form_publisher", "teaching_admin", "service_admin"}, mode = SaMode.OR)
 @RequiredArgsConstructor
 public class EvaluationWindowController {
 
